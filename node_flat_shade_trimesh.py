@@ -20,7 +20,7 @@ class EternalFlatShadeTrimesh:
         return {"required": {"trimesh": ("TRIMESH",)}}
 
     RETURN_TYPES = ("TRIMESH",)
-    RETURN_NAMES = ("mesh",)
+    RETURN_NAMES = ("trimesh",)
     FUNCTION = "flat_shade"
     CATEGORY = "👑 ETERNAL/3d/mesh"
 
