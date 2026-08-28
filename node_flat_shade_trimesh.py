@@ -1,5 +1,7 @@
 import numpy as np
 import trimesh
+from trimesh import Trimesh
+from trimesh.visual import TextureVisuals
 
 
 class EternalFlatShadeTrimesh:
@@ -43,13 +45,13 @@ class EternalFlatShadeTrimesh:
             new_faces = np.arange(new_verts.shape[0], dtype=np.int64).reshape(-1, 3)
             new_normals = np.repeat(fn, 3, axis=0)
 
-            new_tm = trimesh.Trimesh(vertices=new_verts,
-                                     faces=new_faces, process=False)
+            new_tm = Trimesh(vertices=new_verts,
+                             faces=new_faces, process=False)
             new_tm.vertex_normals = new_normals
 
             # carry UVs + texture material if the source had them
             vis = tm.visual
-            if isinstance(vis, trimesh.visual.TextureVisuals) and vis.uv is not None:
+            if isinstance(vis, TextureVisuals) and vis.uv is not None:
                 uv = np.asarray(vis.uv)
                 if uv.shape[0] == verts.shape[0]:
                     new_uv = uv[faces].reshape(-1, 2)
