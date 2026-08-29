@@ -4,23 +4,36 @@ import trimesh
 from comfy_api.latest import Types
 
 
-class MeshToTrimesh:
-    """Types.MESH -> trimesh.Trimesh.
+class EternalMeshBridge:
+    """Bridge between ComfyUI core Types.MESH and GeomPack trimesh.Trimesh.
 
-    Bridges TRELLIS.2 core output (Types.MESH tensors) into GeomPack nodes,
-    which only accept the TRIMESH (trimesh object) type. Respects batch
-    vertex_counts / face_counts when present (zero-padding slices).
+    Two OPTIONAL inputs:
+      - `mesh`    : Types.MESH (e.g. TRELLIS.2 save / core preview)
+      - `trimesh` : trimesh.Trimesh (e.g. GeomPack Fill Holes / Compute Normals)
+
+    Two outputs (both populated from whichever input you supply):
+      - `mesh`    : Types.MESH  (converted from trimesh if you gave trimesh)
+      - `trimesh` : trimesh.Trimesh (converted from mesh if you gave mesh)
+
+    Feed one side, get both back -> wire onwards to whichever node needs which.
     """
     @classmethod
     def INPUT_TYPES(cls):
-        return {"required": {"mesh": ("MESH",)}}
+        return {
+            "optional": {
+                "mesh": ("MESH",),
+                "trimesh": ("TRIMESH",),
+            }
+        }
 
-    RETURN_TYPES = ("TRIMESH",)
-    RETURN_NAMES = ("trimesh",)
-    FUNCTION = "to_trimesh"
+    RETURN_TYPES = ("MESH", "TRIMESH")
+    RETURN_NAMES = ("mesh", "trimesh")
+    FUNCTION = "bridge"
     CATEGORY = "👑 ETERNAL/3d/mesh"
 
-    def to_trimesh(self, mesh: Types.MESH):
+    # ---- Types.MESH -> trimesh.Trimesh -------------------------------------
+    @staticmethod
+    def _mesh_to_trimesh(mesh: Types.MESH):
         B = mesh.vertices.shape[0]
         vc = mesh.vertex_counts
         fc = mesh.face_counts
@@ -43,25 +56,11 @@ class MeshToTrimesh:
                     nrm = nrm[:int(vc[i].item())]
                 tm.vertex_normals = np.asarray(nrm.detach().cpu().float())
             out.append(tm)
-        return (out if B > 1 else out[0],)
+        return out if B > 1 else out[0]
 
-
-class TrimeshToMesh:
-    """trimesh.Trimesh -> Types.MESH.
-
-    Bridges a GeomPack-repaired mesh back to core nodes (SaveGLB / preview),
-    which only accept Types.MESH. Re-pads to a single batch dimension.
-    """
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {"required": {"trimesh": ("TRIMESH",)}}
-
-    RETURN_TYPES = ("MESH",)
-    RETURN_NAMES = ("mesh",)
-    FUNCTION = "to_mesh"
-    CATEGORY = "👑 ETERNAL/3d/mesh"
-
-    def to_mesh(self, trimesh):
+    # ---- trimesh.Trimesh -> Types.MESH -------------------------------------
+    @staticmethod
+    def _trimesh_to_mesh(trimesh):
         items = trimesh if isinstance(trimesh, list) else [trimesh]
         v_list, f_list = [], []
         for tm in items:
@@ -78,20 +77,20 @@ class TrimeshToMesh:
             pf[i, :f.shape[0]] = f
             vc_list.append(v.shape[0])
             fc_list.append(f.shape[0])
-        out = Types.MESH(
+        return Types.MESH(
             vertices=pv,
             faces=pf,
             vertex_counts=torch.tensor(vc_list),
             face_counts=torch.tensor(fc_list),
         )
-        return (out,)
+
+    def bridge(self, mesh=None, trimesh=None):
+        mesh_out = mesh if mesh is not None else (
+            self._trimesh_to_mesh(trimesh) if trimesh is not None else None)
+        trimesh_out = trimesh if trimesh is not None else (
+            self._mesh_to_trimesh(mesh) if mesh is not None else None)
+        return (mesh_out, trimesh_out)
 
 
-NODE_CLASS_MAPPINGS = {
-    "MeshToTrimesh": MeshToTrimesh,
-    "TrimeshToMesh": TrimeshToMesh,
-}
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "MeshToTrimesh": "Mesh to Trimesh Eternal",
-    "TrimeshToMesh": "Trimesh to Mesh Eternal",
-}
+NODE_CLASS_MAPPINGS = {"EternalMeshBridge": EternalMeshBridge}
+NODE_DISPLAY_NAME_MAPPINGS = {"EternalMeshBridge": "Mesh Bridge Eternal"}

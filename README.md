@@ -9,8 +9,7 @@ Category prefix on canvas: `👑 ETERNAL / ...`
 
 | Node | Category | In → Out | Purpose |
 |------|----------|----------|---------|
-| **Mesh to Trimesh Eternal** | `3d/mesh` | `MESH` → `TRIMESH` | Bridge TRELLIS.2 core `Types.MESH` into GeomPack (which needs `trimesh` objects). |
-| **Trimesh to Mesh Eternal** | `3d/mesh` | `TRIMESH` → `MESH` | Bridge a GeomPack-repaired mesh back to core `Types.MESH` (SaveGLB / preview). |
+| **Mesh Bridge Eternal** | `3d/mesh` | in: `mesh` (MESH) + `trimesh` (TRIMESH) [optional] / out: `mesh` (MESH) + `trimesh` (TRIMESH) | ONE node for both. Bridges core `Types.MESH` ↔ `trimesh.Trimesh` (GeomPack). Feed one side, get both back. Merged from old `Mesh to Trimesh Eternal` + `Trimesh to Mesh Eternal`. |
 | **Flat Shade Eternal** | `3d/mesh` | in: `mesh` (MESH) + `trimesh` (TRIMESH) [optional] / out: `mesh` (MESH) + `trimesh` (TRIMESH) | ONE node for both. Force true flat (faceted) shading on whichever input you supply; de-indexed, baked per-vertex normals. Merged from the old `Flat Shade Mesh Eternal` + `Flat Shade (Trimesh) Eternal`. |
 | **Trimesh to Model3D Eternal** | `3d/mesh` | `TRIMESH` → `FILE_3D_GLB` | One-node equivalent of `Trimesh to Mesh Eternal` + `Create 3D File (from Mesh)`. Wires straight into `Preview 3D (Advanced)` `model_3d`. |
 | **Video Sizes ETERNAL** | `2d/size` | (state) → sizes | Aspect-ratio + long-edge picker for text-to-image / video latent sizing. |
