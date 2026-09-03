@@ -66,7 +66,7 @@ class EternalAspectRatioSizePicker:
     RETURN_TYPES = ("INT", "INT")
     RETURN_NAMES = ("width", "height")
     FUNCTION = "pick"
-    CATEGORY = "👑 ETERNAL/2d/size"
+    CATEGORY = "⚡ ETERNAL ● ↩ /🎨 2D /📐 Size"
 
     def pick(self, aspect_ratio, long_edge, invert):
         a, b = RATIOS[aspect_ratio]  # canonical (w, h) from the label

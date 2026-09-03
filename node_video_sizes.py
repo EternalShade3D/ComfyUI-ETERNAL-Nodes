@@ -88,7 +88,7 @@ class ETERNALVideoSizes:
     RETURN_NAMES = ("width", "height")
     OUTPUT_TOOLTIPS = ("The chosen width in pixels.", "The chosen height in pixels.")
     FUNCTION = "get_size"
-    CATEGORY = "👑 ETERNAL/🔢 Values"
+    CATEGORY = "⚡ ETERNAL ● ↩ /🔢 Sizes"
 
     def get_size(self, VideoSizesState: str):
         try:
