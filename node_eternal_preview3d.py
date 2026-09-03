@@ -27,7 +27,7 @@ class EternalPreview3D(IO.ComfyNode):
             node_id="EternalPreview3D",
             search_aliases=["view mesh", "3d viewer", "eternal preview", "preview 3d"],
             display_name="Preview 3D Eternal",
-            category="⚡ ETERNAL ● ↩ /🧊 3D /👁 Preview",
+            category="⚡ ETERNAL ● ↩ /🧊 3D",
             description=(
                 "Eternal copy of Preview 3D & Animation. Same 3D viewport; previews are "
                 "written to the TEMP folder with a preview3d_eternal_ prefix. Viewer "

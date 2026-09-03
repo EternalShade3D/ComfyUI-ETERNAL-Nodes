@@ -29,7 +29,7 @@ class EternalMeshBridge:
     RETURN_TYPES = ("MESH", "TRIMESH")
     RETURN_NAMES = ("mesh", "trimesh")
     FUNCTION = "bridge"
-    CATEGORY = "⚡ ETERNAL ● ↩ /🧊 3D /🕸 Mesh"
+    CATEGORY = "⚡ ETERNAL ● ↩ /🧊 3D"
 
     # ---- Types.MESH -> trimesh.Trimesh -------------------------------------
     @staticmethod

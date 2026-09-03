@@ -175,7 +175,7 @@ class EternalFlatShade:
     RETURN_TYPES = ("MESH", "TRIMESH")
     RETURN_NAMES = ("mesh", "trimesh")
     FUNCTION = "flat_shade"
-    CATEGORY = "⚡ ETERNAL ● ↩ /🧊 3D /🕸 Mesh"
+    CATEGORY = "⚡ ETERNAL ● ↩ /🧊 3D"
 
     # ---- Types.MESH path: pure GPU torch --------------------------------
     @staticmethod

@@ -25,7 +25,7 @@ class EternalTrimeshToModel3D:
     RETURN_TYPES = ("FILE_3D_GLB",)
     RETURN_NAMES = ("model_3d",)
     FUNCTION = "to_model3d"
-    CATEGORY = "⚡ ETERNAL ● ↩ /🧊 3D /🕸 Mesh"
+    CATEGORY = "⚡ ETERNAL ● ↩ /🧊 3D"
 
     def to_model3d(self, trimesh):
         items = trimesh if isinstance(trimesh, list) else [trimesh]
