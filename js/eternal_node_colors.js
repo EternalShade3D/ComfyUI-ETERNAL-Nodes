@@ -1,22 +1,24 @@
 // ETERNAL node colors — every ETERNAL node spawns with brand colors.
 //
 // Why JS (not python): LiteGraph node colors (node.color = title bar,
-// node.bgcolor = body) are frontend-only state, like Pixaroma's "Node
-// Colors" picker writes them. Applying at node creation means every new
-// ETERNAL node already carries the colors; the user can still recolor any
-// node afterwards with the picker (we never overwrite user edits on
-// existing nodes — we only set colors at spawn time).
+// node.bgcolor = body) are frontend-only state, exactly the fields Pixaroma's
+// "Node Colors" picker writes. Setting them at node creation means every NEW
+// ETERNAL node already carries the brand colors.
+//
+// User recolors survive: on workflow load, the serialized color/bgcolor are
+// applied AFTER nodeCreated fires, so anything saved in the workflow (or set
+// later with the Pixaroma picker) always wins over these spawn defaults.
 //
 // Title  #4a3fcf  (Eternal indigo)
 // Body   #2a283e  (Eternal dark)
+import { app } from "../../scripts/app.js";
+
 const TITLE = "#4a3fcf";
 const BODY = "#2a283e";
 
-// Any node whose comfyClass OR display name contains ETERNAL branding.
 function isEternal(node) {
   const cls = String(node.constructor?.comfyClass || "");
-  const disp = String(node.title || "");
-  return cls.includes("Eternal") || disp.includes("ETERNAL") || disp.includes("Eternal");
+  return cls.includes("Eternal") || cls.includes("ETERNAL");
 }
 
 app.registerExtension({
@@ -24,12 +26,7 @@ app.registerExtension({
 
   nodeCreated(node) {
     if (!isEternal(node)) return;
-    // Only brand nodes that don't already carry explicit colors (workflow
-    // reload: serialized nodes already have color/bgcolor fields set; we
-    // respect whatever was saved — user recolors survive).
-    if (!node.color && !node.bgcolor) {
-      node.color = TITLE;
-      node.bgcolor = BODY;
-    }
+    node.color = TITLE;
+    node.bgcolor = BODY;
   },
 });
