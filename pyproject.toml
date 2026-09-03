@@ -1,0 +1,26 @@
+[project]
+name = "eternal-nodes"
+description = "ETERNAL nodes for ComfyUI: Flat Shade Eternal (GPU flat shading via split/crease modes), Mesh Bridge (Types.MESH <-> trimesh), Trimesh to Model3D, Preview 3D Eternal, Video Sizes and Aspect Ratio Size Picker."
+version = "1.0.0"
+license = { file = "LICENSE" }
+
+keywords = ["comfyui", "eternal", "3d", "mesh", "flat-shade", "trimesh", "glb", "preview"]
+
+# No extra deps: torch/numpy/trimesh ship with ComfyUI core.
+dependencies = []
+
+requires-python = ">=3.10"
+
+classifiers = [
+    "Operating System :: OS Independent",
+    "Environment :: GPU :: NVIDIA CUDA",
+]
+
+[project.urls]
+Repository = "https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes"
+Issues = "https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/issues"
+
+[tool.comfy]
+PublisherId = "EternalShade3D"
+DisplayName = "ETERNAL Nodes"
+Icon = "https://raw.githubusercontent.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/main/icon.svg"
