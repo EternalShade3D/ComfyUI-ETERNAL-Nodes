@@ -3,17 +3,29 @@
 Custom ComfyUI nodes by **EternalShade3D** — a single library pack for 3D mesh
 repair/bridging, flat-shade control, and image-size picking.
 
-Category prefix on canvas: `👑 ETERNAL / ...`
+Category prefix on canvas: `⚡ ETERNAL ● ↩ / ...`
+
+Nodes spawn with brand colors: title `#4a3fcf`, body `#2a283e` (recolorable
+with any node-color picker afterwards).
 
 ## Nodes
 
 | Node | Category | In → Out | Purpose |
 |------|----------|----------|---------|
-| **Mesh Bridge Eternal** | `3d/mesh` | in: `mesh` (MESH) + `trimesh` (TRIMESH) [optional] / out: `mesh` (MESH) + `trimesh` (TRIMESH) | ONE node for both. Bridges core `Types.MESH` ↔ `trimesh.Trimesh` (GeomPack). Feed one side, get both back. Merged from old `Mesh to Trimesh Eternal` + `Trimesh to Mesh Eternal`. |
-| **Flat Shade Eternal** | `3d/mesh` | in: `mesh` (MESH) + `trimesh` (TRIMESH) [optional] / out: `mesh` (MESH) + `trimesh` (TRIMESH) | ONE node for both. Force true flat (faceted) shading on whichever input you supply; de-indexed, baked per-vertex normals. Merged from the old `Flat Shade Mesh Eternal` + `Flat Shade (Trimesh) Eternal`. |
-| **Trimesh to Model3D Eternal** | `3d/mesh` | `TRIMESH` → `FILE_3D_GLB` | One-node equivalent of `Trimesh to Mesh Eternal` + `Create 3D File (from Mesh)`. Wires straight into `Preview 3D (Advanced)` `model_3d`. |
-| **Video Sizes ETERNAL** | `2d/size` | (state) → sizes | Aspect-ratio + long-edge picker for text-to-image / video latent sizing. |
-| **Aspect Ratio Size Picker** | `2d/size` | → `width`, `height` (INT) | Aspect-ratio dropdown + long-edge slider (64–8192, step 8) + invert toggle. Snaps to multiple of 8. |
+| **Mesh Bridge Eternal** | `🧊 3D / 🕸 Mesh` | in: `mesh` (MESH) + `trimesh` (TRIMESH) [optional] / out: `mesh` (MESH) + `trimesh` (TRIMESH) | ONE node for both. Bridges core `Types.MESH` ↔ `trimesh.Trimesh` (GeomPack). Feed one side, get both back. Merged from old `Mesh to Trimesh Eternal` + `Trimesh to Mesh Eternal`. |
+| **Flat Shade Eternal** | `🧊 3D / 🕸 Mesh` | in: `mesh` (MESH) + `trimesh` (TRIMESH) [optional] / out: `mesh` (MESH) + `trimesh` (TRIMESH) | ONE node for both. Shades the mesh FLAT (like Blender `shade_flat()`, with custom split normals cleared). Two GPU modes: `split` (every face own verts — true flat, ~3x verts) or `crease` (only edges sharper than `crease_angle` split — flat hard edges, light file; 0° = split). glTF has no flat-shading state, so splitting is the only way a GLB displays flat. |
+| **Trimesh to Model3D Eternal** | `🧊 3D / 🕸 Mesh` | `TRIMESH` → `FILE_3D_GLB` | One-node equivalent of `Trimesh to Mesh Eternal` + `Create 3D File (from Mesh)`. Wires straight into `Preview 3D (Advanced)` `model_3d`. |
+| **Preview 3D Eternal** | `🧊 3D / 👁 Preview` | `FILE_3D_*` → viewer | Eternal copy of `Preview 3D & Animation`; previews to TEMP; viewer settings persist per-node into the workflow JSON. |
+| **Video Sizes Eternal** | `🔢 Sizes` | (state) → sizes | Aspect-ratio + long-edge picker for text-to-image / video latent sizing. |
+| **Aspect Ratio Size Picker** | `🎨 2D / 📐 Size` | → `width`, `height` (INT) | Aspect-ratio dropdown + long-edge slider (64–8192, step 8) + invert toggle. Snaps to multiple of 8. |
+
+## Flat Shade Eternal — mode comparison
+
+Same mesh, same workflow. `split` bakes per-face geometry (flat everywhere,
+more vertices); `crease` only splits edges above the angle threshold
+(lighter file, flat hard edges).
+
+![Flat Shade Eternal mode comparison — file size difference](docs/flat_shade_eternal_size_compare.png)
 
 ## Aspect Ratio Size Picker
 
