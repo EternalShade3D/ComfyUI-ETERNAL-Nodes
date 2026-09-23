@@ -448,17 +448,29 @@ function buildViewer(container, vp, imageUrl, node) {
   );
 
   container._resize360 = () => {
-    const nw = container.clientWidth;
-    const nh = container.clientHeight;
+    // In fullscreen the element fills the screen and the graph zoom no longer scales
+    // it, so the box to measure is the fullscreen element itself and the pixel ratio is
+    // the device's own: oversampling by the graph zoom there would only cost VRAM.
+    const fs = document.fullscreenElement;
+    const box = fs || container;
+    const nw = box.clientWidth;
+    const nh = box.clientHeight;
     if (nw < 10 || nh < 10) return;
-    renderer.setPixelRatio(canvasBackingScale(nw, nh));
+    renderer.setPixelRatio(fs ? window.devicePixelRatio || 1 : canvasBackingScale(nw, nh));
     renderer.setSize(nw, nh);
     camera.aspect = nw / nh;
     camera.updateProjectionMatrix();
     paintReadout();
   };
 
-  const fsHandler = () => requestAnimationFrame(() => container._resize360?.());
+  // The fullscreen element's box is only final a frame or two after the event, so
+  // re-fit across a few frames instead of trusting the first one (which is what made
+  // the view stay the wrong size until the window was resized by hand).
+  const fsHandler = () => {
+    requestAnimationFrame(() => container._resize360?.());
+    setTimeout(() => container._resize360?.(), 150);
+    setTimeout(() => container._resize360?.(), 400);
+  };
   document.addEventListener("fullscreenchange", fsHandler);
 
   container._dispose360 = () => {
@@ -494,15 +506,20 @@ function buildViewer(container, vp, imageUrl, node) {
       container._resize360?.();
       paintReadout();
     },
+    // Re-reads only the widgets that change how the sphere LOOKS, and deliberately
+    // leaves the view exactly where it is. The auto-rotate toggle, the background and
+    // the exposure all call this, and none of them may move the camera: applying the
+    // POV here is what made switching Auto off snap the view back to the start angle
+    // instead of simply stopping the drift.
     refresh: () => {
       const c = cfg();
       ring.visible = c.horizon;
       auto = Number(wget(node, "auto_rotate", 0)) || 0;
       paintBg(String(wget(node, "background", "dark") || "dark"));
       applyExposure();
-      applyPov();
       paintReadout();
     },
+    // Only the POV rows (start view, camera height) and a graph re-run call this.
     applyPov,
   };
 
@@ -565,7 +582,7 @@ function buildFace(node, container) {
   const sync = () => {
     const live = container._v360?.getFov?.();
     const f = Number.isFinite(live) ? live : readFov();
-    val.textContent = f.toFixed(0) + "°";
+    val.textContent = fmtFov(f);
     const on = (Number(wget(node, "auto_rotate", 0)) || 0) > 0;
     sw.classList.toggle("on", on);
   };
@@ -587,7 +604,8 @@ function buildFace(node, container) {
   });
 
   const val = mk("div", "p360-val", "");
-  val.title = "Field of view in degrees. Click for the full settings panel.";
+  val.title =
+    "Zoom: field of view in degrees, or 35 mm-equivalent focal length. Click for the full settings panel.";
   val.addEventListener("click", (e) => {
     e.stopPropagation();
     togglePanel(node);
@@ -647,17 +665,100 @@ function buildFace(node, container) {
 
   group.append(
     ib(ICON.reset, "Reset view: back to the centre, at the node's fov", () => container._v360?.reset()),
-    ib(ICON.full, "Fullscreen", () => {
+    ib(ICON.full, "Fullscreen", (e) => {
+      // Fullscreen the WIDGET HOST and not the viewport inside it. The renderer is
+      // sized from the host's client box, so fullscreening the inner element left the
+      // canvas at node size inside a fullscreen box: the screen went black.
+      e?.stopPropagation?.();
       try {
-        if (document.fullscreenElement) document.exitFullscreen();
-        else vp.requestFullscreen?.();
-      } catch (_) {}
+        if (document.fullscreenElement) {
+          document.exitFullscreen?.()?.catch?.(() => {});
+        } else {
+          container.requestFullscreen?.({ navigationUI: "hide" })?.catch?.(() => {});
+        }
+      } catch (_) {
+        // A browser that refuses fullscreen must not take the click down with it.
+      }
     }),
     bSet
   );
 
+  // --- quick controls, ON the node -------------------------------------------
+  // Zoom, drift speed and camera height: the three you touch constantly while
+  // exploring a panorama. All three are node widgets, so they save with the workflow.
+  // Zoom can read in degrees or in 35 mm-equivalent focal length. The camera's fov is
+  // its VERTICAL field of view, so the mm figure comes from the vertical sensor height
+  // (24 mm) rather than the 36 mm width: f = (24/2) / tan(fov/2). The unit is a display
+  // choice only and never moves the view.
+  const qRow = document.createElement("div");
+  qRow.className = "p360-q";
+
+  let unit = node.properties?.p360Unit === "mm" ? "mm" : "deg";
+  const focalFromFov = (f) => 12 / Math.tan((clamp(f, 1, 179) * Math.PI) / 360);
+  const fmtFov = (f) =>
+    unit === "mm" ? focalFromFov(f).toFixed(1) + "mm" : f.toFixed(0) + "°";
+
+  const qSlider = (title, name, min, max, step, apply) => {
+    const wrap = document.createElement("div");
+    wrap.className = "p360-qs";
+    const t = document.createElement("div");
+    t.className = "t";
+    t.textContent = title;
+    const inp = document.createElement("input");
+    inp.type = "range";
+    inp.min = String(min);
+    inp.max = String(max);
+    inp.step = String(step);
+    const cur = Number(wget(node, name, min));
+    inp.value = String(clamp(Number.isFinite(cur) ? cur : min, min, max));
+    inp.title = title;
+    // The graph listens for drags on its own canvas: a slider drag must not pan the node.
+    inp.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+    const n = document.createElement("div");
+    n.className = "n";
+    const show = () => {
+      n.textContent = name === "fov" ? fmtFov(Number(inp.value)) : inp.value;
+    };
+    inp.addEventListener("input", (ev) => {
+      ev.stopPropagation();
+      wset(node, name, Number(inp.value));
+      apply(Number(inp.value));
+      show();
+    });
+    show();
+    wrap.append(t, inp, n);
+    return { wrap, input: inp, show };
+  };
+
+  const qFov = qSlider("Zoom", "fov", 30, 140, 1, (v) => {
+    container._v360?.setFov(v);
+    sync();
+  });
+  const qAuto = qSlider("Auto", "auto_rotate", 0, 60, 1, () => {
+    // refresh() re-reads the drift speed and never moves the camera.
+    container._v360?.refresh();
+    sync();
+  });
+  const qZ = qSlider("Height", "z_offset", -50, 50, 1, () => container._v360?.applyPov());
+
+  const unitBtn = mk("button", "p360-unit", unit === "mm" ? "mm" : "°");
+  unitBtn.type = "button";
+  unitBtn.title =
+    "Read the zoom in degrees, or in 35 mm-equivalent focal length (from the vertical field of view). Display only: the view does not move.";
+  unitBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    unit = unit === "mm" ? "deg" : "mm";
+    unitBtn.textContent = unit === "mm" ? "mm" : "°";
+    node.properties = node.properties || {};
+    node.properties.p360Unit = unit;
+    qFov.show();
+    sync();
+  });
+
+  qRow.append(qFov.wrap, qAuto.wrap, qZ.wrap, unitBtn);
+
   band.append(bMinus, val, bPlus, sw, group);
-  face.append(band, vp);
+  face.append(band, qRow, vp);
   container.appendChild(face);
 
   container._face = { sync, vp };
@@ -686,6 +787,21 @@ function injectCSS() {
       font:11px ui-sans-serif,system-ui,sans-serif; overflow:hidden; }
     .p360-face > * { flex-shrink:0; }
     .p360-band { display:flex; align-items:center; gap:6px; }
+
+    /* Quick controls: the three things you touch while looking around, on the node
+       itself (zoom, drift speed, camera height), all bound to node widgets so they
+       save with the workflow. */
+    .p360-q { display:flex; align-items:center; gap:7px; }
+    .p360-qs { display:flex; align-items:center; gap:6px; flex:1 1 0; min-width:0; }
+    .p360-qs .t { color:#8a8a8a; font-size:10.5px; flex:0 0 auto; }
+    .p360-qs input[type=range] { flex:1 1 auto; min-width:34px; height:14px; margin:0;
+      accent-color:#f66744; cursor:pointer; }
+    .p360-qs .n { min-width:46px; flex:0 0 auto; text-align:right; color:#ddd;
+      font-variant-numeric:tabular-nums; }
+    .p360-unit { width:34px; height:24px; flex:0 0 auto; box-sizing:border-box; margin:0;
+      padding:0; background:#1d1d1d; border:1px solid #444; border-radius:4px; color:#aaa;
+      cursor:pointer; font:600 10.5px ui-sans-serif,system-ui,sans-serif; }
+    .p360-unit:hover { border-color:#f66744; color:#ddd; }
     .p360-step { width:30px; height:26px; flex:0 0 auto; box-sizing:border-box; display:flex;
       align-items:center; justify-content:center; margin:0; padding:0; background:#1d1d1d;
       border:1px solid #444; border-radius:4px; color:#aaa; cursor:pointer;
@@ -1009,7 +1125,7 @@ function openPanel(node) {
       360,
       5,
       node,
-      () => live()?.refresh()
+      () => live()?.applyPov()
     )
   );
   nodeSec.appendChild(
@@ -1021,7 +1137,7 @@ function openPanel(node) {
       90,
       5,
       node,
-      () => live()?.refresh()
+      () => live()?.applyPov()
     )
   );
   nodeSec.appendChild(
@@ -1033,7 +1149,7 @@ function openPanel(node) {
       50,
       1,
       node,
-      () => live()?.refresh()
+      () => live()?.applyPov()
     )
   );
   nodeSec.appendChild(
