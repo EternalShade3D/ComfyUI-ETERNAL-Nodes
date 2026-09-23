@@ -23,13 +23,35 @@ class EternalMeshBridge:
             "optional": {
                 "mesh": ("MESH",),
                 "trimesh": ("TRIMESH",),
+                "meshwithvoxel": ("MESHWITHVOXEL",),
             }
         }
 
-    RETURN_TYPES = ("MESH", "TRIMESH")
-    RETURN_NAMES = ("mesh", "trimesh")
+    RETURN_TYPES = ("MESH", "TRIMESH", "MESHWITHVOXEL")
+    RETURN_NAMES = ("mesh", "trimesh", "meshwithvoxel")
     FUNCTION = "bridge"
     CATEGORY = "⚡ ETERNAL ● ↩ /🧊 3D"
+
+    # ---- Trellis2 MeshWithVoxel access -------------------------------------
+    @staticmethod
+    def _mwv_cls():
+        """Locate Trellis2's MeshWithVoxel class (pack imported as 'ComfyUI-Trellis2')."""
+        import importlib
+        try:
+            mod = importlib.import_module("ComfyUI-Trellis2.trellis2.representations")
+            return mod.MeshWithVoxel
+        except Exception:
+            return None
+
+    # ---- MeshWithVoxel -> trimesh.Trimesh -----------------------------------
+    @staticmethod
+    def _mwv_to_trimesh(mwv):
+        tm = trimesh.Trimesh(
+            vertices=np.asarray(mwv.vertices.detach().cpu().float()),
+            faces=np.asarray(mwv.faces.detach().cpu().long()),
+            process=False,
+        )
+        return tm
 
     # ---- Types.MESH -> trimesh.Trimesh -------------------------------------
     @staticmethod
@@ -84,12 +106,23 @@ class EternalMeshBridge:
             face_counts=torch.tensor(fc_list),
         )
 
-    def bridge(self, mesh=None, trimesh=None):
-        mesh_out = mesh if mesh is not None else (
-            self._trimesh_to_mesh(trimesh) if trimesh is not None else None)
-        trimesh_out = trimesh if trimesh is not None else (
-            self._mesh_to_trimesh(mesh) if mesh is not None else None)
-        return (mesh_out, trimesh_out)
+    def bridge(self, mesh=None, trimesh=None, meshwithvoxel=None):
+        mwv_cls = self._mwv_cls()
+
+        # Normalize a MeshWithVoxel input into both trimesh and Types.MESH
+        if meshwithvoxel is not None and mwv_cls is not None and isinstance(meshwithvoxel, mwv_cls):
+            tm = self._mwv_to_trimesh(meshwithvoxel)
+            trimesh_out = trimesh if trimesh is not None else tm
+            mesh_out = mesh if mesh is not None else self._trimesh_to_mesh(tm)
+            mwv_out = meshwithvoxel
+        else:
+            mesh_out = mesh if mesh is not None else (
+                self._trimesh_to_mesh(trimesh) if trimesh is not None else None)
+            trimesh_out = trimesh if trimesh is not None else (
+                self._mesh_to_trimesh(mesh) if mesh is not None else None)
+            mwv_out = meshwithvoxel if (meshwithvoxel is not None and mwv_cls is not None
+                                        and isinstance(meshwithvoxel, mwv_cls)) else None
+        return (mesh_out, trimesh_out, mwv_out)
 
 
 NODE_CLASS_MAPPINGS = {"EternalMeshBridge": EternalMeshBridge}

@@ -28,12 +28,31 @@ class EternalTrimeshToModel3D:
     CATEGORY = "⚡ ETERNAL ● ↩ /🧊 3D"
 
     def to_model3d(self, trimesh):
+        import trimesh as _trimesh
         items = trimesh if isinstance(trimesh, list) else [trimesh]
         out = []
         for tm in items:
-            if tm is None or len(tm.vertices) == 0 or len(tm.faces) == 0:
+            # Accept ComfyUI Types.MESH (e.g. Hunyuan3D VAE decode output) directly.
+            if isinstance(tm, Types.MESH):
+                mesh = tm  # already the right type; go straight to GLB encoding
+                glb = mesh_item_to_glb_bytes(mesh, 0)
+                out.append(Types.File3D(BytesIO(glb), file_format="glb"))
+                continue
+            if not hasattr(tm, "vertices") or tm is None or len(tm.vertices) == 0:
                 raise ValueError("Trimesh to Model3D Eternal: empty mesh, cannot export GLB.")
-            # 1) TRIMESH -> Types.MESH  (mirrors Trimesh to Mesh Eternal)
+            # trimesh.Trimesh -> Types.MESH
+            if not isinstance(tm, _trimesh.Trimesh):
+                # Unknown mesh-like object: coerce via trimesh when possible
+                if hasattr(tm, "vertices") and hasattr(tm, "faces"):
+                    tm = _trimesh.Trimesh(
+                        vertices=np.asarray(tm.vertices),
+                        faces=np.asarray(tm.faces),
+                        process=False,
+                    )
+                else:
+                    raise ValueError(
+                        f"Trimesh to Model3D Eternal: unsupported mesh type {type(tm).__name__}."
+                    )
             v = torch.from_numpy(np.asarray(tm.vertices)).float()
             f = torch.from_numpy(np.asarray(tm.faces)).long()
             nrm = torch.from_numpy(np.asarray(tm.vertex_normals)).float()
