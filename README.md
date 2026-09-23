@@ -8,6 +8,20 @@ Category prefix on canvas: `⚡ ETERNAL ● ↩ / ...`
 Nodes spawn with brand colors: title `#4a3fcf`, body `#2a283e` (recolorable
 with any node-color picker afterwards).
 
+## Repository layout
+
+Mirrors the Pixaroma pack: a thin root, every node in `nodes/`, every front-end file in `js/`.
+
+| Path | What lives there |
+|------|------------------|
+| `__init__.py` | Registrar only — imports the modules and merges `NODE_CLASS_MAPPINGS` |
+| `nodes/` | One module per node (`viewer360.py`, `tile_prepare.py`, `flat_shade.py`, ...) |
+| `nodes/_tile_common.py` | Shared tile math (grid planning, positions, overlap) |
+| `js/` | Front-end extensions, served to the browser as `WEB_DIRECTORY` |
+| `js/shared/` | Reusable UI helpers (panel, settings, node sizing) |
+| `docs/` | Reference images kept with the pack |
+| `icon.svg` | Pack icon — its URL is published in `pyproject.toml`, so it stays in the root |
+
 ## Nodes
 
 | Node | Category | In → Out | Purpose |

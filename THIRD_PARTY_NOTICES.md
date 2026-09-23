@@ -5,7 +5,7 @@ reproduced below and apply to the ported portions.
 
 ---
 
-## Panorama 360 Viewer (`node_viewer360.py`, `js/panorama360_viewer.js`)
+## Panorama 360 Viewer (`nodes/viewer360.py`, `js/panorama360_viewer.js`)
 
 Ported from **pavel-zinchenko/comfyui-360-viewer**
 (https://github.com/pavel-zinchenko/comfyui-360-viewer).

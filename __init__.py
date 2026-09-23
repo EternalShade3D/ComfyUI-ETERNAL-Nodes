@@ -1,19 +1,30 @@
-from .node_video_sizes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
-from .node_flat_shade import NODE_CLASS_MAPPINGS as _FLAT_MAP, NODE_DISPLAY_NAME_MAPPINGS as _FLAT_NAMES
-from .node_mesh_bridge import NODE_CLASS_MAPPINGS as _BRIDGE_MAP, NODE_DISPLAY_NAME_MAPPINGS as _BRIDGE_NAMES
-from .node_trimesh_to_file3d import NODE_CLASS_MAPPINGS as _F3D_MAP, NODE_DISPLAY_NAME_MAPPINGS as _F3D_NAMES
-from .node_aspect_ratio_size_picker import NODE_CLASS_MAPPINGS as _AR_MAP, NODE_DISPLAY_NAME_MAPPINGS as _AR_NAMES
-from .node_eternal_preview3d import EternalPreview3D
-from .node_tile_grid import NODE_CLASS_MAPPINGS as _TILE_GRID_MAP, NODE_DISPLAY_NAME_MAPPINGS as _TILE_GRID_NAMES
-from .node_tile_split import NODE_CLASS_MAPPINGS as _TILE_SPLIT_MAP, NODE_DISPLAY_NAME_MAPPINGS as _TILE_SPLIT_NAMES
-from .node_tile_stitch import NODE_CLASS_MAPPINGS as _TILE_STITCH_MAP, NODE_DISPLAY_NAME_MAPPINGS as _TILE_STITCH_NAMES
-from .node_prompt_by_index import NODE_CLASS_MAPPINGS as _PROMPT_MAP, NODE_DISPLAY_NAME_MAPPINGS as _PROMPT_NAMES
-from .node_tile_prompt_panel import NODE_CLASS_MAPPINGS as _PANEL_MAP, NODE_DISPLAY_NAME_MAPPINGS as _PANEL_NAMES
-from .node_tile_unbatch import NODE_CLASS_MAPPINGS as _UNBATCH_MAP, NODE_DISPLAY_NAME_MAPPINGS as _UNBATCH_NAMES
-from .node_prompt_list_join import NODE_CLASS_MAPPINGS as _JOIN_MAP, NODE_DISPLAY_NAME_MAPPINGS as _JOIN_NAMES
-from .node_tile_prepare import NODE_CLASS_MAPPINGS as _PREP_MAP, NODE_DISPLAY_NAME_MAPPINGS as _PREP_NAMES
-from .node_prompt_line import NODE_CLASS_MAPPINGS as _PLINE_MAP, NODE_DISPLAY_NAME_MAPPINGS as _PLINE_NAMES
-from .node_viewer360 import NODE_CLASS_MAPPINGS as _V360_MAP, NODE_DISPLAY_NAME_MAPPINGS as _V360_NAMES
+"""ComfyUI-ETERNAL-Nodes.
+
+Thin registrar, the same shape the Pixaroma pack uses: this file only wires the
+node modules into ComfyUI's mappings. Nothing else lives here.
+
+    nodes/   the Python side - one module per node
+    js/      the front-end, served to the browser as WEB_DIRECTORY
+    docs/    reference images kept with the pack
+"""
+
+from .nodes.video_sizes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+
+from .nodes.flat_shade import NODE_CLASS_MAPPINGS as _FLAT_MAP, NODE_DISPLAY_NAME_MAPPINGS as _FLAT_NAMES
+from .nodes.mesh_bridge import NODE_CLASS_MAPPINGS as _BRIDGE_MAP, NODE_DISPLAY_NAME_MAPPINGS as _BRIDGE_NAMES
+from .nodes.trimesh_to_file3d import NODE_CLASS_MAPPINGS as _F3D_MAP, NODE_DISPLAY_NAME_MAPPINGS as _F3D_NAMES
+from .nodes.aspect_ratio_size_picker import NODE_CLASS_MAPPINGS as _AR_MAP, NODE_DISPLAY_NAME_MAPPINGS as _AR_NAMES
+from .nodes.preview3d import EternalPreview3D
+from .nodes.tile_grid import NODE_CLASS_MAPPINGS as _TILE_GRID_MAP, NODE_DISPLAY_NAME_MAPPINGS as _TILE_GRID_NAMES
+from .nodes.tile_split import NODE_CLASS_MAPPINGS as _TILE_SPLIT_MAP, NODE_DISPLAY_NAME_MAPPINGS as _TILE_SPLIT_NAMES
+from .nodes.tile_stitch import NODE_CLASS_MAPPINGS as _TILE_STITCH_MAP, NODE_DISPLAY_NAME_MAPPINGS as _TILE_STITCH_NAMES
+from .nodes.prompt_by_index import NODE_CLASS_MAPPINGS as _PROMPT_MAP, NODE_DISPLAY_NAME_MAPPINGS as _PROMPT_NAMES
+from .nodes.tile_prompt_panel import NODE_CLASS_MAPPINGS as _PANEL_MAP, NODE_DISPLAY_NAME_MAPPINGS as _PANEL_NAMES
+from .nodes.tile_unbatch import NODE_CLASS_MAPPINGS as _UNBATCH_MAP, NODE_DISPLAY_NAME_MAPPINGS as _UNBATCH_NAMES
+from .nodes.prompt_list_join import NODE_CLASS_MAPPINGS as _JOIN_MAP, NODE_DISPLAY_NAME_MAPPINGS as _JOIN_NAMES
+from .nodes.tile_prepare import NODE_CLASS_MAPPINGS as _PREP_MAP, NODE_DISPLAY_NAME_MAPPINGS as _PREP_NAMES
+from .nodes.prompt_line import NODE_CLASS_MAPPINGS as _PLINE_MAP, NODE_DISPLAY_NAME_MAPPINGS as _PLINE_NAMES
+from .nodes.viewer360 import NODE_CLASS_MAPPINGS as _V360_MAP, NODE_DISPLAY_NAME_MAPPINGS as _V360_NAMES
 
 NODE_CLASS_MAPPINGS = {
     **NODE_CLASS_MAPPINGS,
