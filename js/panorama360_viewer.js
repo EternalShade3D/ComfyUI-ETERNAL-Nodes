@@ -63,7 +63,7 @@ const WIDGET_NAME = "panorama360";
 // refits via computeSize"). Nothing writes an explicit element height any more —
 // that is what made the viewer spill out of the frame and cover its neighbours.
 // The face instead fills whatever it is given (position:absolute).
-const VIEW_MIN_H = 200;
+const VIEW_MIN_H = 250;
 // Classic-only node clamps. In Nodes 2.0 the rendered size lives in the Vue layout
 // store and clamping node.size desyncs the two (Save 3D notes this).
 const NODE_MIN_W = 380;
@@ -314,8 +314,9 @@ function buildViewer(container, vp, imageUrl, node) {
     yaw: clamp(num("start_yaw", 180), 0, 360),
     pitch: clamp(num("start_pitch", 0), -90, 90),
     // z_offset is in PERCENT of the sphere radius: 10 = the eye sits a tenth of the
-    // way out of the centre, along the vertical axis.
-    z: clamp(num("z_offset", 0), -50, 50),
+    // way out of the centre, along the vertical axis. The range runs to 99 because the
+    // eye must stay INSIDE the sphere: at 100 it would sit on the surface itself.
+    z: clamp(num("z_offset", 0), -99, 99),
   });
   let lon = pov().yaw;
   let lat = pov().pitch;
@@ -726,7 +727,10 @@ function buildFace(node, container) {
       show();
     });
     show();
-    wrap.append(t, inp, n);
+    const hd = document.createElement("div");
+    hd.className = "hd";
+    hd.append(t, n);
+    wrap.append(hd, inp);
     return { wrap, input: inp, show };
   };
 
@@ -739,7 +743,7 @@ function buildFace(node, container) {
     container._v360?.refresh();
     sync();
   });
-  const qZ = qSlider("Height", "z_offset", -50, 50, 1, () => container._v360?.applyPov());
+  const qZ = qSlider("Height", "z_offset", -99, 99, 1, () => container._v360?.applyPov());
 
   const unitBtn = mk("button", "p360-unit", unit === "mm" ? "mm" : "°");
   unitBtn.type = "button";
@@ -782,58 +786,60 @@ function injectCSS() {
     /* The node face is fully drawn by us (Pixaroma pattern): the native ComfyUI
        widgets for fov/auto_rotate/background/frame_index are HIDDEN with
        hideJsonWidget(), so nothing stock-styled is left in the body. */
-    .p360-face { position:absolute; inset:0; display:flex; flex-direction:column; gap:6px;
-      box-sizing:border-box; padding:2px 6px 6px; color:#ddd;
-      font:11px ui-sans-serif,system-ui,sans-serif; overflow:hidden; }
+    .p360-face { position:absolute; inset:0; display:flex; flex-direction:column; gap:7px;
+      box-sizing:border-box; padding:4px 7px 7px; color:#ddd;
+      font:12.5px ui-sans-serif,system-ui,sans-serif; overflow:hidden; }
     .p360-face > * { flex-shrink:0; }
     .p360-band { display:flex; align-items:center; gap:6px; }
 
     /* Quick controls: the three things you touch while looking around, on the node
        itself (zoom, drift speed, camera height), all bound to node widgets so they
        save with the workflow. */
-    .p360-q { display:flex; align-items:center; gap:7px; }
-    .p360-qs { display:flex; align-items:center; gap:6px; flex:1 1 0; min-width:0; }
-    .p360-qs .t { color:#8a8a8a; font-size:10.5px; flex:0 0 auto; }
-    .p360-qs input[type=range] { flex:1 1 auto; min-width:34px; height:14px; margin:0;
-      accent-color:#f66744; cursor:pointer; }
-    .p360-qs .n { min-width:46px; flex:0 0 auto; text-align:right; color:#ddd;
-      font-variant-numeric:tabular-nums; }
-    .p360-unit { width:34px; height:24px; flex:0 0 auto; box-sizing:border-box; margin:0;
+    .p360-q { display:flex; align-items:flex-end; gap:10px; }
+    .p360-qs { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:2px; }
+    .p360-qs .hd { display:flex; align-items:baseline; justify-content:space-between;
+      gap:6px; }
+    .p360-qs .hd .t { color:#8a8a8a; font-size:11.5px; }
+    .p360-qs .hd .n { color:#ddd; font-variant-numeric:tabular-nums; }
+    .p360-qs input[type=range] { width:100%; min-width:0; height:20px; margin:0;
+      accent-color:#8b6cf5; cursor:pointer; }
+    .p360-unit { width:46px; height:30px; flex:0 0 auto; box-sizing:border-box; margin:0;
       padding:0; background:#1d1d1d; border:1px solid #444; border-radius:4px; color:#aaa;
-      cursor:pointer; font:600 10.5px ui-sans-serif,system-ui,sans-serif; }
-    .p360-unit:hover { border-color:#f66744; color:#ddd; }
-    .p360-step { width:30px; height:26px; flex:0 0 auto; box-sizing:border-box; display:flex;
+      cursor:pointer; font:600 12px ui-sans-serif,system-ui,sans-serif; }
+    .p360-unit:hover { border-color:#8b6cf5; color:#ddd; }
+    .p360-step { width:38px; height:34px; flex:0 0 auto; box-sizing:border-box; display:flex;
       align-items:center; justify-content:center; margin:0; padding:0; background:#1d1d1d;
       border:1px solid #444; border-radius:4px; color:#aaa; cursor:pointer;
-      font:700 13px ui-sans-serif,system-ui,sans-serif; }
-    .p360-step:hover { border-color:#f66744; color:#ddd; }
-    .p360-val { min-width:56px; height:26px; box-sizing:border-box; display:flex; align-items:center;
+      font:700 16px ui-sans-serif,system-ui,sans-serif; }
+    .p360-step:hover { border-color:#8b6cf5; color:#ddd; }
+    .p360-val { min-width:74px; height:34px; box-sizing:border-box; display:flex; align-items:center;
       justify-content:center; background:#1d1d1d; border:1px solid #444; border-radius:4px;
       color:#ddd; font-variant-numeric:tabular-nums; cursor:pointer; }
-    .p360-val:hover { border-color:#f66744; }
-    .p360-sw { display:flex; align-items:center; gap:5px; flex:0 0 auto; background:none; border:0;
-      margin:0; padding:0 3px; color:#cfcfcf; cursor:pointer;
-      font:11px ui-sans-serif,system-ui,sans-serif; }
-    .p360-sw i { width:24px; height:13px; border-radius:8px; background:rgba(255,255,255,.14);
+    .p360-val:hover { border-color:#8b6cf5; }
+    .p360-sw { display:flex; align-items:center; gap:7px; flex:0 0 auto; background:none; border:0;
+      margin:0; padding:0 5px; color:#cfcfcf; cursor:pointer;
+      font:12.5px ui-sans-serif,system-ui,sans-serif; }
+    .p360-sw i { width:32px; height:17px; border-radius:8px; background:rgba(255,255,255,.14);
       border:1px solid rgba(255,255,255,.18); position:relative; flex:none; box-sizing:border-box; }
     .p360-sw i::after { content:""; position:absolute; top:1px; left:1px; width:9px; height:9px;
       border-radius:50%; background:#bbb; transition:left .1s, background .1s; }
-    .p360-sw.on i { background:#f66744; border-color:#f66744; }
-    .p360-sw.on i::after { left:12px; background:#fff; }
-    .p360-ib { width:26px; height:26px; flex:0 0 auto; box-sizing:border-box; display:flex;
+    .p360-sw i::after { width:13px; height:13px; }
+    .p360-sw.on i { background:#8b6cf5; border-color:#8b6cf5; }
+    .p360-sw.on i::after { left:18px; background:#fff; }
+    .p360-ib { width:34px; height:34px; flex:0 0 auto; box-sizing:border-box; display:flex;
       align-items:center; justify-content:center; margin:0; padding:0; background:#1d1d1d;
       border:1px solid #444; border-radius:4px; color:#aaa; cursor:pointer;
       transition:background .1s,border-color .1s,color .1s; }
-    .p360-ib:hover { border-color:#f66744; color:#ddd; }
-    .p360-ib.on { background:#f66744; border-color:#f66744; color:#fff; }
-    .p360-ib svg { display:block; flex:none; pointer-events:none; }
-    .p360-set { display:flex; align-items:center; gap:6px; height:26px; box-sizing:border-box;
-      padding:0 10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14);
-      border-radius:6px; color:#f66744; cursor:pointer; white-space:nowrap;
-      font:600 11px ui-sans-serif,system-ui,sans-serif;
+    .p360-ib:hover { border-color:#8b6cf5; color:#ddd; }
+    .p360-ib.on { background:#8b6cf5; border-color:#8b6cf5; color:#fff; }
+    .p360-ib svg { width:18px; height:18px; display:block; flex:none; pointer-events:none; }
+    .p360-set { display:flex; align-items:center; gap:6px; height:34px; box-sizing:border-box;
+      padding:0 12px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14);
+      border-radius:6px; color:#8b6cf5; cursor:pointer; white-space:nowrap;
+      font:600 12.5px ui-sans-serif,system-ui,sans-serif;
       transition:background .1s, border-color .1s, color .1s; }
     .p360-set span { color:#dcdce0; transition:color .1s; }
-    .p360-set:hover { background:#f66744; border-color:#f66744; color:#fff; }
+    .p360-set:hover { background:#8b6cf5; border-color:#8b6cf5; color:#fff; }
     .p360-set:hover span { color:#fff; }
     .p360-set svg { display:block; flex:none; pointer-events:none; }
     .p360-grow { margin-left:auto; display:flex; gap:3px; }
@@ -852,8 +858,8 @@ function injectCSS() {
       max-height:88vh; display:flex; flex-direction:column; }
     .p360-h { flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:10px 12px;
       background:#232323; border-bottom:1px solid #333; cursor:grab; user-select:none; }
-    .p360-h .g { color:#f66744; }
-    .p360-h .n { color:#f66744; font-weight:600; }
+    .p360-h .g { color:#8b6cf5; }
+    .p360-h .n { color:#8b6cf5; font-weight:600; }
     .p360-h .x { margin-left:auto; color:#8a8a8a; cursor:pointer; padding:0 4px; }
     .p360-h .x:hover { color:#fff; }
     .p360-b { padding:14px 12px; display:flex; flex-direction:column; gap:12px; overflow-y:auto; min-height:0; }
@@ -863,29 +869,29 @@ function injectCSS() {
     .p360-row .lab { color:#cfcfcf; }
     .p360-row .sub { color:#8a8a8a; font-size:11px; margin-top:2px; }
     .p360-sl { display:flex; align-items:center; gap:8px; }
-    .p360-sl input[type=range] { flex:1 1 auto; min-width:0; accent-color:#f66744; }
+    .p360-sl input[type=range] { flex:1 1 auto; min-width:0; accent-color:#8b6cf5; }
     .p360-ctl { display:flex; align-items:center; justify-content:space-between; gap:7px;
       background:#1d1d1d; border:1px solid #444; border-radius:4px; padding:5px 8px;
       cursor:pointer; user-select:none; }
-    .p360-ctl:hover { border-color:#f66744; }
+    .p360-ctl:hover { border-color:#8b6cf5; }
     .p360-num { color:#ddd; font-variant-numeric:tabular-nums; }
     .p360-tog { flex:0 0 auto; width:34px; height:18px; border-radius:9px; cursor:pointer;
       background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.18); position:relative; }
     .p360-tog .knob { position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%;
       background:#bbb; transition:left .1s, background .1s; }
-    .p360-tog.on { background:#f66744; border-color:#f66744; }
+    .p360-tog.on { background:#8b6cf5; border-color:#8b6cf5; }
     .p360-tog.on .knob { left:18px; background:#fff; }
     .p360-pop { position:fixed; z-index:10040; background:#1a1a1a; border:1px solid #444; border-radius:5px;
       box-shadow:0 10px 30px rgba(0,0,0,0.6); padding:3px; max-height:50vh; overflow:auto; }
     .p360-pop i { display:block; padding:6px 12px; font-size:12px; color:#ccc; cursor:pointer;
       border-radius:3px; white-space:nowrap; font-style:normal; }
     .p360-pop i:hover { background:#2a2a2a; color:#fff; }
-    .p360-pop i.on { color:#f66744; }
+    .p360-pop i.on { color:#8b6cf5; }
     .p360-rule { height:1px; background:#333; margin:2px 0; }
     .p360-f { flex:0 0 auto; display:flex; gap:8px; padding:10px 12px; border-top:1px solid #333; background:#1f1f1f; }
     .p360-bt { border:1px solid #444; background:rgba(255,255,255,0.04); color:#d8d8d8; border-radius:5px;
       padding:5px 12px; font:12px 'Segoe UI',sans-serif; cursor:pointer; }
-    .p360-bt:hover { border-color:#f66744; color:#fff; }
+    .p360-bt:hover { border-color:#8b6cf5; color:#fff; }
     .p360-push { margin-left:auto; }
   `;
   document.head.appendChild(s);
@@ -923,7 +929,7 @@ function comboRow(label, hint, options, get, set, onAfter) {
   const ctl = mk("div", "p360-ctl");
   const val = mk("div", "p360-num", String(get()));
   const caret = mk("span", "", "▼");
-  caret.style.color = "#f66744";
+  caret.style.color = "#8b6cf5";
   caret.style.fontSize = "9px";
   ctl.append(val, caret);
 
@@ -1073,7 +1079,7 @@ function openPanel(node) {
 
   const panel = mk("div", "p360-panel");
   const head = mk("div", "p360-h");
-  head.append(mk("span", "g", "⚙"), mk("span", "n", "Panorama 360 Viewer"));
+  head.append(mk("span", "g", "⚙"), mk("span", "n", "Panorama 360 Viewer Eternal"));
   const x = mk("span", "x", "✕");
   x.addEventListener("click", closePanel);
   head.appendChild(x);
@@ -1143,10 +1149,10 @@ function openPanel(node) {
   nodeSec.appendChild(
     sliderRow(
       "Camera height (Z axis)",
-      "Moves the viewpoint up or down along the vertical axis, as a percent of the sphere radius, so you look around from a different height instead of from the middle of the image. 10 = a tenth of the radius above centre, negative = below. This is a translation, not a tilt: the horizon itself rises or falls.",
+      "Slides the viewpoint up or down along the vertical axis, as a percent of the sphere radius: 100 would put the eye exactly on the sphere surface, so 99 slides the image almost all the way past you. Positive looks from above, negative from below. A translation, not a tilt, so the horizon itself rises or falls.",
       "z_offset",
-      -50,
-      50,
+      -99,
+      99,
       1,
       node,
       () => live()?.applyPov()

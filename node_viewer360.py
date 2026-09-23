@@ -34,7 +34,7 @@ class EternalViewer360(IO.ComfyNode):
     def define_schema(cls):
         return IO.Schema(
             node_id="EternalViewer360",
-            display_name="Panorama 360 Viewer",
+            display_name="Panorama 360 Viewer Eternal",
             category="⚡ ETERNAL ● ↩ /🌐 360",
             description=(
                 "Shows an equirectangular (360) image as a WebGL sphere inside the node: "
@@ -135,15 +135,15 @@ class EternalViewer360(IO.ComfyNode):
                 IO.Float.Input(
                     "z_offset",
                     default=0.0,
-                    min=-50.0,
-                    max=50.0,
+                    min=-99.0,
+                    max=99.0,
                     step=1.0,
                     tooltip=(
-                        "Camera height on the vertical (Z) axis: moves the viewpoint up "
-                        "or down as a percent of the sphere radius, so you look around "
-                        "from a different height instead of from the middle of the "
-                        "image. A translation, not a tilt. Negative looks from below, "
-                        "positive from above."
+                        "Camera height on the vertical (Z) axis: slides the viewpoint up "
+                        "or down as a percent of the sphere radius. 100 would put the eye "
+                        "exactly on the sphere surface, so 99 slides the image almost all "
+                        "the way past you. A translation, not a tilt. Negative looks from "
+                        "below, positive from above."
                     ),
                 ),
             ],
@@ -178,4 +178,4 @@ class EternalViewer360(IO.ComfyNode):
 
 
 NODE_CLASS_MAPPINGS = {"EternalViewer360": EternalViewer360}
-NODE_DISPLAY_NAME_MAPPINGS = {"EternalViewer360": "Panorama 360 Viewer"}
+NODE_DISPLAY_NAME_MAPPINGS = {"EternalViewer360": "Panorama 360 Viewer Eternal"}
