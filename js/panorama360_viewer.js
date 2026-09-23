@@ -804,7 +804,7 @@ function buildFace(node, container) {
   const unitBtn = mk("button", "p360-unit", unit === "mm" ? "mm" : "° FOV");
   unitBtn.type = "button";
   unitBtn.title =
-    "What the Zoom slider reads. " + DEG + " FOV is the field of view in degrees; mm is the " +
+    "What the Zoom slider reads. ° FOV is the field of view in degrees; mm is the " +
     "35 mm-equivalent focal length (derived from the vertical field of view). Switching only " +
     "changes the numbers, never the view.";
   unitBtn.addEventListener("click", (e) => {
