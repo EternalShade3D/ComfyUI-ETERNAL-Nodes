@@ -358,12 +358,20 @@ function buildViewer(container, vp, imageUrl, node) {
     if ("toneMappingExposure" in renderer) renderer.toneMappingExposure = e;
   };
 
-  // Re-applies the node's POV widgets without re-running the graph, so the sphere
-  // moves while a slider in the settings panel is being dragged.
-  const applyPov = () => {
+  // --- two independent transforms ---------------------------------------------
+  // The opening GAZE (yaw + pitch) and the camera HEIGHT (z) are separate transforms
+  // and must stay separate. They used to be one function, so dragging the Height slider
+  // re-applied the gaze as well and the view snapped back to the start angle every time
+  // you moved the eye up or down. Height moves the sphere; the gaze moves the look
+  // direction; neither touches the other.
+  const applyView = () => {
     const p = pov();
     lon = p.yaw;
     lat = p.pitch;
+  };
+
+  const applyHeight = () => {
+    const p = pov();
     // The eye rises, so the sphere drops: the horizon sinks out of the way and you look
     // around from a higher (or lower) vantage point instead of from the sphere's centre.
     const dy = (-p.z / 100) * R360;
@@ -438,6 +446,9 @@ function buildViewer(container, vp, imageUrl, node) {
       camera.fov = clamp(camera.fov + e.deltaY * c.zoom, c.minFov, c.maxFov);
       camera.updateProjectionMatrix();
       paintReadout();
+      // paintReadout refreshes the chip; sync() is what moves the node's own zoom
+      // slider. Without it the slider kept the old value while the wheel zoomed.
+      sync();
       // Write the framed fov back into the node, debounced: the view you framed is
       // the view the workflow saves, without a graph write per wheel tick.
       clearTimeout(saveT);
@@ -520,8 +531,14 @@ function buildViewer(container, vp, imageUrl, node) {
       applyExposure();
       paintReadout();
     },
-    // Only the POV rows (start view, camera height) and a graph re-run call this.
-    applyPov,
+    // A row that moves the gaze must not touch the height, and vice versa.
+    applyView,
+    applyHeight,
+    // Both at once: building the view, resetting it, and a graph re-run.
+    applyPov: () => {
+      applyView();
+      applyHeight();
+    },
   };
 
   if (conf.resetOnQueue) resetView();
@@ -574,6 +591,9 @@ function buildFace(node, container) {
   vp.className = "p360-vp";
 
   let lastAuto = 8; // remembered so toggling Auto back on restores the speed you had
+  // Set once the quick sliders exist. sync() calls this, so anything that changes the
+  // camera through sync() (the wheel above all) also moves the sliders on the node.
+  let qPump = null;
 
   const readFov = () => {
     const f = Number(wget(node, "fov", 100));
@@ -584,6 +604,7 @@ function buildFace(node, container) {
     const live = container._v360?.getFov?.();
     const f = Number.isFinite(live) ? live : readFov();
     val.textContent = fmtFov(f);
+    qPump?.();
     const on = (Number(wget(node, "auto_rotate", 0)) || 0) > 0;
     sw.classList.toggle("on", on);
   };
@@ -743,7 +764,28 @@ function buildFace(node, container) {
     container._v360?.refresh();
     sync();
   });
-  const qZ = qSlider("Height", "z_offset", -99, 99, 1, () => container._v360?.applyPov());
+  const qZ = qSlider("Height", "z_offset", -99, 99, 1, () => container._v360?.applyHeight());
+
+  qPump = () => {
+    // The live camera is the truth here, not the widget: the wheel debounces its write
+    // into the widget, so reading the widget would leave the slider a moment behind.
+    const live = container._v360?.getFov?.();
+    const zf = Number.isFinite(live) ? live : Number(wget(node, "fov", readFov()));
+    if (Number.isFinite(zf)) {
+      qFov.input.value = String(clamp(Math.round(zf), 30, 140));
+      qFov.show();
+    }
+    const za = Number(wget(node, "auto_rotate", 0));
+    if (Number.isFinite(za)) {
+      qAuto.input.value = String(clamp(Math.round(za), 0, 60));
+      qAuto.show();
+    }
+    const zz = Number(wget(node, "z_offset", 0));
+    if (Number.isFinite(zz)) {
+      qZ.input.value = String(clamp(Math.round(zz), -99, 99));
+      qZ.show();
+    }
+  };
 
   const unitBtn = mk("button", "p360-unit", unit === "mm" ? "mm" : "°");
   unitBtn.type = "button";
@@ -759,7 +801,13 @@ function buildFace(node, container) {
     sync();
   });
 
-  qRow.append(qFov.wrap, qAuto.wrap, qZ.wrap, unitBtn);
+  // The unit toggle belongs to the ZOOM control, so it sits in that control's header.
+  // Left at the end of the row it read as if it belonged to whichever slider happened to
+  // be last (the Height control), which is a placement rule broken, not a preference.
+  const zoomHead = qFov.wrap.querySelector(".hd");
+  if (zoomHead) zoomHead.insertBefore(unitBtn, zoomHead.querySelector(".n"));
+
+  qRow.append(qFov.wrap, qAuto.wrap, qZ.wrap);
 
   band.append(bMinus, val, bPlus, sw, group);
   face.append(band, qRow, vp);
@@ -800,12 +848,12 @@ function injectCSS() {
     .p360-qs .hd { display:flex; align-items:baseline; justify-content:space-between;
       gap:6px; }
     .p360-qs .hd .t { color:#8a8a8a; font-size:11.5px; }
-    .p360-qs .hd .n { color:#ddd; font-variant-numeric:tabular-nums; }
+    .p360-qs .hd .n { color:#ddd; font-variant-numeric:tabular-nums; margin-left:auto; }
     .p360-qs input[type=range] { width:100%; min-width:0; height:20px; margin:0;
       accent-color:#8b6cf5; cursor:pointer; }
-    .p360-unit { width:46px; height:30px; flex:0 0 auto; box-sizing:border-box; margin:0;
+    .p360-unit { width:42px; height:23px; flex:0 0 auto; box-sizing:border-box; margin:0;
       padding:0; background:#1d1d1d; border:1px solid #444; border-radius:4px; color:#aaa;
-      cursor:pointer; font:600 12px ui-sans-serif,system-ui,sans-serif; }
+      cursor:pointer; font:600 11.5px ui-sans-serif,system-ui,sans-serif; }
     .p360-unit:hover { border-color:#8b6cf5; color:#ddd; }
     .p360-step { width:38px; height:34px; flex:0 0 auto; box-sizing:border-box; display:flex;
       align-items:center; justify-content:center; margin:0; padding:0; background:#1d1d1d;
@@ -841,12 +889,48 @@ function injectCSS() {
     .p360-set span { color:#dcdce0; transition:color .1s; }
     .p360-set:hover { background:#8b6cf5; border-color:#8b6cf5; color:#fff; }
     .p360-set:hover span { color:#fff; }
+    /* --- fullscreen -----------------------------------------------------------
+       Pure CSS: :fullscreen matches whatever element went fullscreen, so the face
+       restyles itself with no JS hook to keep in sync. The controls scale up for a
+       screen instead of a node, move to the BOTTOM (column-reverse), float on a
+       glass panel rather than a black bar, and keep clear of the screen edges. */
+    :fullscreen .p360-face { flex-direction:column-reverse; padding:18px 20px 20px; gap:14px; }
+    :fullscreen .p360-band, :fullscreen .p360-q {
+      box-sizing:border-box; padding:12px 16px; border-radius:14px;
+      background:rgba(20,20,26,.42); backdrop-filter:blur(16px) saturate(1.2);
+      -webkit-backdrop-filter:blur(16px) saturate(1.2);
+      border:1px solid rgba(255,255,255,.14); box-shadow:0 10px 34px rgba(0,0,0,.45); }
+    :fullscreen .p360-band { gap:14px; }
+    :fullscreen .p360-q { gap:22px; align-items:flex-end; }
+    :fullscreen .p360-step { width:62px; height:56px; border-radius:8px;
+      font:700 26px ui-sans-serif,system-ui,sans-serif; }
+    :fullscreen .p360-val { min-width:132px; height:56px; border-radius:8px; font-size:21px; }
+    :fullscreen .p360-sw { font:18px ui-sans-serif,system-ui,sans-serif; gap:12px; padding:0 8px; }
+    :fullscreen .p360-sw i { width:54px; height:29px; }
+    :fullscreen .p360-sw i::after { width:23px; height:23px; }
+    :fullscreen .p360-sw.on i::after { left:29px; }
+    :fullscreen .p360-ib { width:56px; height:56px; border-radius:8px; }
+    :fullscreen .p360-ib svg { width:28px; height:28px; }
+    :fullscreen .p360-set { height:56px; padding:0 22px; border-radius:8px;
+      font:600 18px ui-sans-serif,system-ui,sans-serif; }
+    :fullscreen .p360-qs input[type=range] { height:36px; }
+    :fullscreen .p360-qs .hd .t, :fullscreen .p360-qs .hd .n { font-size:17px; }
+    :fullscreen .p360-unit { width:80px; height:52px; border-radius:8px;
+      font:600 17px ui-sans-serif,system-ui,sans-serif; }
+    :fullscreen .p360-chip { left:16px; bottom:14px; padding:6px 12px; font-size:15px;
+      border-radius:8px; }
+
+    /* One control language for the face: Settings is a button like the icon buttons,
+       not a differently surfaced chip that reads as a stray text placeholder. */
+    .p360-set { background:#1d1d1d; border:1px solid #444; }
+    .p360-set:hover { border-color:#8b6cf5; }
+
     .p360-set svg { display:block; flex:none; pointer-events:none; }
-    .p360-grow { margin-left:auto; display:flex; gap:3px; }
+    .p360-grow { margin-left:auto; display:flex; align-items:center; gap:6px; }
     .p360-vp { position:relative; flex:1 1 0; min-height:0; box-sizing:border-box;
       border:1px solid #444; border-radius:4px; overflow:hidden; background:#262626;
       cursor:grab; touch-action:none; }
-    .p360-chip { position:absolute; left:6px; bottom:5px; padding:2px 7px; border-radius:4px;
+    .p360-chip { position:absolute; left:9px; bottom:8px; padding:2px 7px; border-radius:4px;
       background:rgba(0,0,0,.55); color:#ddd; font-size:10.5px; white-space:nowrap; pointer-events:none; }
     .p360-msg { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
       text-align:center; padding:14px; box-sizing:border-box; color:#b0b0b0; font-size:11px;
@@ -1131,7 +1215,7 @@ function openPanel(node) {
       360,
       5,
       node,
-      () => live()?.applyPov()
+      () => live()?.applyView()
     )
   );
   nodeSec.appendChild(
@@ -1143,7 +1227,7 @@ function openPanel(node) {
       90,
       5,
       node,
-      () => live()?.applyPov()
+      () => live()?.applyView()
     )
   );
   nodeSec.appendChild(
@@ -1155,7 +1239,7 @@ function openPanel(node) {
       99,
       1,
       node,
-      () => live()?.applyPov()
+      () => live()?.applyHeight()
     )
   );
   nodeSec.appendChild(
