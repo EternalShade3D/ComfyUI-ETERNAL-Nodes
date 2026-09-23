@@ -155,11 +155,14 @@ function wset(node, name, value) {
 // ── icons (SVG, never text glyphs) ──────────────────────────────────────────
 
 const ICON = {
+  // A real toothed gear. The previous icon was a circle with eight spokes, which reads
+  // as a brightness/sun control rather than Settings (a reviewer asked to have it
+  // swapped). Path taken verbatim from Feather icons, settings.svg (MIT).
   gear:
     '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" ' +
-    'stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.1"/>' +
-    '<path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7' +
-    'M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7"/></svg>',
+    'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+    '<circle cx="12" cy="12" r="3"/>' +
+    '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
   reset:
     '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" ' +
     'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
@@ -739,7 +742,18 @@ function buildFace(node, container) {
     const n = document.createElement("div");
     n.className = "n";
     const show = () => {
-      n.textContent = name === "fov" ? fmtFov(Number(inp.value)) : inp.value;
+      const v = Number(inp.value);
+      // Every readout carries its unit, so no number on the node is a guess: degrees or
+      // mm for the zoom, degrees per second for the drift, percent of the sphere radius
+      // for the height.
+      n.textContent =
+        name === "fov"
+          ? fmtFov(v)
+          : name === "auto_rotate"
+            ? v + "°/s"
+            : name === "z_offset"
+              ? v + "%"
+              : String(v);
     };
     inp.addEventListener("input", (ev) => {
       ev.stopPropagation();
@@ -759,7 +773,7 @@ function buildFace(node, container) {
     container._v360?.setFov(v);
     sync();
   });
-  const qAuto = qSlider("Auto", "auto_rotate", 0, 60, 1, () => {
+  const qAuto = qSlider("Spin", "auto_rotate", 0, 60, 1, () => {
     // refresh() re-reads the drift speed and never moves the camera.
     container._v360?.refresh();
     sync();
@@ -787,14 +801,16 @@ function buildFace(node, container) {
     }
   };
 
-  const unitBtn = mk("button", "p360-unit", unit === "mm" ? "mm" : "°");
+  const unitBtn = mk("button", "p360-unit", unit === "mm" ? "mm" : "° FOV");
   unitBtn.type = "button";
   unitBtn.title =
-    "Read the zoom in degrees, or in 35 mm-equivalent focal length (from the vertical field of view). Display only: the view does not move.";
+    "What the Zoom slider reads. " + DEG + " FOV is the field of view in degrees; mm is the " +
+    "35 mm-equivalent focal length (derived from the vertical field of view). Switching only " +
+    "changes the numbers, never the view.";
   unitBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     unit = unit === "mm" ? "deg" : "mm";
-    unitBtn.textContent = unit === "mm" ? "mm" : "°";
+    unitBtn.textContent = unit === "mm" ? "mm" : "° FOV";
     node.properties = node.properties || {};
     node.properties.p360Unit = unit;
     qFov.show();
@@ -849,9 +865,22 @@ function injectCSS() {
       gap:6px; }
     .p360-qs .hd .t { color:#8a8a8a; font-size:11.5px; }
     .p360-qs .hd .n { color:#ddd; font-variant-numeric:tabular-nums; margin-left:auto; }
-    .p360-qs input[type=range] { width:100%; min-width:0; height:20px; margin:0;
-      accent-color:#8b6cf5; cursor:pointer; }
-    .p360-unit { width:42px; height:23px; flex:0 0 auto; box-sizing:border-box; margin:0;
+    /* The track used to be left to the browser, whose unfilled half came out nearly
+       black on this dark surface. Both halves are drawn here so the control reads as a
+       slider and not as a line of text. */
+    .p360-qs input[type=range] { -webkit-appearance:none; appearance:none; width:100%;
+      min-width:0; height:20px; margin:0; background:transparent; cursor:pointer; }
+    .p360-qs input[type=range]::-webkit-slider-runnable-track { height:6px; border-radius:3px;
+      background:#3c3c48; border:1px solid #4a4a58; box-sizing:border-box; }
+    .p360-qs input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none;
+      width:16px; height:16px; margin-top:-5px; border-radius:50%; background:#8b6cf5;
+      border:1px solid #b3a3ff; box-shadow:0 1px 3px rgba(0,0,0,.55); }
+    .p360-qs input[type=range]:hover::-webkit-slider-thumb { background:#9d83ff; }
+    .p360-qs input[type=range]::-moz-range-track { height:6px; border-radius:3px;
+      background:#3c3c48; border:1px solid #4a4a58; box-sizing:border-box; }
+    .p360-qs input[type=range]::-moz-range-thumb { width:16px; height:16px; border-radius:50%;
+      background:#8b6cf5; border:1px solid #b3a3ff; }
+    .p360-unit { width:62px; height:24px; flex:0 0 auto; box-sizing:border-box; margin:0;
       padding:0; background:#1d1d1d; border:1px solid #444; border-radius:4px; color:#aaa;
       cursor:pointer; font:600 11.5px ui-sans-serif,system-ui,sans-serif; }
     .p360-unit:hover { border-color:#8b6cf5; color:#ddd; }
@@ -913,7 +942,13 @@ function injectCSS() {
     :fullscreen .p360-ib svg { width:28px; height:28px; }
     :fullscreen .p360-set { height:56px; padding:0 22px; border-radius:8px;
       font:600 18px ui-sans-serif,system-ui,sans-serif; }
-    :fullscreen .p360-qs input[type=range] { height:36px; }
+    :fullscreen .p360-qs input[type=range] { height:38px; }
+    :fullscreen .p360-qs input[type=range]::-webkit-slider-runnable-track { height:10px;
+      border-radius:5px; }
+    :fullscreen .p360-qs input[type=range]::-webkit-slider-thumb { width:28px; height:28px;
+      margin-top:-9px; }
+    :fullscreen .p360-qs input[type=range]::-moz-range-track { height:10px; border-radius:5px; }
+    :fullscreen .p360-qs input[type=range]::-moz-range-thumb { width:28px; height:28px; }
     :fullscreen .p360-qs .hd .t, :fullscreen .p360-qs .hd .n { font-size:17px; }
     :fullscreen .p360-unit { width:80px; height:52px; border-radius:8px;
       font:600 17px ui-sans-serif,system-ui,sans-serif; }
