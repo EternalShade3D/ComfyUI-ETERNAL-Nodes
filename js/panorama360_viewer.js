@@ -177,6 +177,31 @@ const ICON = {
     '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" ' +
     'stroke-width="1.8" stroke-linecap="round"><path d="M6 2.6H2.6V6M10 2.6h3.4V6' +
     'M6 13.4H2.6V10M10 13.4h3.4V10"/></svg>',
+  // Zoom steppers. Bare + and - glyphs read as arithmetic rather than magnification,
+  // and this pack's own convention is SVG for anything that is an ICON, not a value.
+  zoomIn:
+    '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+    '<circle cx="6.6" cy="6.6" r="4.2"/><path d="M9.8 9.8 13.4 13.4M6.6 4.6v4M4.6 6.6h4"/></svg>',
+  zoomOut:
+    '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+    '<circle cx="6.6" cy="6.6" r="4.2"/><path d="M9.8 9.8 13.4 13.4M4.6 6.6h4"/></svg>',
+  spin:
+    '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M13.2 8a5.2 5.2 0 1 1-1.6-3.75"/><path d="M13.6 2.1v3.5h-3.5"/></svg>',
+  close:
+    '<svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
+  chevron:
+    '<svg viewBox="0 0 16 16" width="9" height="9" fill="none" stroke="currentColor" ' +
+    'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M4 6.2 8 10l4-3.8"/></svg>',
+  rise:
+    '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M8 13.2V3M4.6 6.4 8 3l3.4 3.4"/></svg>',
 };
 
 // ── three.js ────────────────────────────────────────────────────────────────
@@ -352,7 +377,8 @@ function buildViewer(container, vp, imageUrl, node) {
       )
     ).toFixed(0);
     readout.textContent =
-      "fov " + camera.fov.toFixed(0) + "° (" + horiz + "° wide)" + (auto > 0 ? " · auto " + auto + "°/s" : "");
+      "fov " + camera.fov.toFixed(0) + "° (" + horiz + "° wide)" +
+      (auto !== 0 ? " · auto " + (auto > 0 ? "+" : "") + auto + "°/s" : "");
     container._face?.sync?.(); // the band's fov box follows the live camera
   };
 
@@ -553,7 +579,10 @@ function buildViewer(container, vp, imageUrl, node) {
     const now = performance.now();
     const dt = Math.min((now - lastT) / 1000, 0.25);
     lastT = now;
-    if (auto > 0 && !dragging) {
+    // `!== 0` rather than `> 0`: a NEGATIVE speed is a real speed (it drifts the view
+    // counter-clockwise) and `> 0` ignored it while the slider showed a number. Zero
+    // is the only value that means "off".
+    if (auto !== 0 && !dragging) {
       lon += auto * dt;
       if (lon > 360) lon -= 360;
     }
@@ -587,6 +616,24 @@ function buildFace(node, container) {
   const face = document.createElement("div");
   face.className = "p360-face";
 
+  // Fullscreen-only title. The container is overflow:hidden and its height comes from
+  // getMinHeight, so this is an ABSOLUTE overlay: it never steals height from the
+  // sphere, and the base rule keeps it off the node face entirely.
+  const title = document.createElement("div");
+  title.className = "p360-title";
+  const titleTxt = document.createElement("span");
+  titleTxt.textContent = "Panorama 360 Viewer Eternal";
+  const titleGear = document.createElement("button");
+  titleGear.type = "button";
+  titleGear.className = "p360-titleg";
+  titleGear.title = "Settings";
+  titleGear.innerHTML = ICON.gear;
+  titleGear.addEventListener("click", (e) => {
+    e.stopPropagation();
+    togglePanel(node);
+  });
+  title.append(titleTxt, titleGear);
+
   const band = document.createElement("div");
   band.className = "p360-band";
 
@@ -608,7 +655,9 @@ function buildFace(node, container) {
     const f = Number.isFinite(live) ? live : readFov();
     val.textContent = fmtFov(f);
     qPump?.();
-    const on = (Number(wget(node, "auto_rotate", 0)) || 0) > 0;
+    // `!== 0`, because a negative speed is ON rather than off: with `> 0` the pill went
+    // dark while the view was visibly drifting the other way.
+    const on = (Number(wget(node, "auto_rotate", 0)) || 0) !== 0;
     sw.classList.toggle("on", on);
   };
 
@@ -620,9 +669,10 @@ function buildFace(node, container) {
     sync();
   };
 
-  const bMinus = mk("button", "p360-step", "\u2212");
+  const bMinus = mk("button", "p360-step");
   bMinus.type = "button";
-  bMinus.title = "Zoom out: wider field of view";
+  bMinus.innerHTML = ICON.zoomOut;
+  bMinus.title = "Zoom OUT: a WIDER view (the field of view number goes UP)";
   bMinus.addEventListener("click", (e) => {
     e.stopPropagation();
     applyFov(readFov() + 5);
@@ -636,9 +686,10 @@ function buildFace(node, container) {
     togglePanel(node);
   });
 
-  const bPlus = mk("button", "p360-step", "+");
+  const bPlus = mk("button", "p360-step");
   bPlus.type = "button";
-  bPlus.title = "Zoom in: narrower field of view";
+  bPlus.innerHTML = ICON.zoomIn;
+  bPlus.title = "Zoom IN: a NARROWER view, more detail (the field of view number goes DOWN)";
   bPlus.addEventListener("click", (e) => {
     e.stopPropagation();
     applyFov(readFov() - 5);
@@ -650,9 +701,12 @@ function buildFace(node, container) {
   sw.innerHTML = "<i></i>Auto";
   sw.addEventListener("click", (e) => {
     e.stopPropagation();
-    const on = (Number(wget(node, "auto_rotate", 0)) || 0) > 0;
-    if (on) {
-      lastAuto = Number(wget(node, "auto_rotate", 0)) || 8;
+    const speed = Number(wget(node, "auto_rotate", 0)) || 0;
+    if (speed !== 0) {
+      // Remember the MAGNITUDE only. Toggling Auto back on must never surprise you with
+      // a counter-clockwise drift set once by accident - the pill restores a positive
+      // speed, and the Spin slider is how you choose a direction.
+      lastAuto = Math.abs(speed) || 8;
       wset(node, "auto_rotate", 0);
     } else {
       wset(node, "auto_rotate", lastAuto || 8);
@@ -719,7 +773,13 @@ function buildFace(node, container) {
   qRow.className = "p360-q";
 
   let unit = node.properties?.p360Unit === "mm" ? "mm" : "deg";
-  const focalFromFov = (f) => 12 / Math.tan((clamp(f, 1, 179) * Math.PI) / 360);
+  // 35 mm-equivalent focal length is quoted on the HORIZONTAL 36 mm frame, not the
+  // 24 mm vertical one. Dividing by 12 (the vertical half-height) made every mm
+  // reading 1.5x too small: 100 deg reported 7.2 mm when the real answer is 10.8 mm.
+  // f = (36/2) / tan(fov/2). The camera's fov here IS the horizontal one, because the
+  // viewer's chip reports the horizontal figure alongside it and a panorama is
+  // always looked at horizontally - never 12 mm "tall".
+  const focalFromFov = (f) => 18 / Math.tan((clamp(f, 30, 140) * Math.PI) / 360);
   const fmtFov = (f) =>
     unit === "mm" ? focalFromFov(f).toFixed(1) + "mm" : f.toFixed(0) + "°";
 
@@ -769,11 +829,23 @@ function buildFace(node, container) {
     return { wrap, input: inp, show };
   };
 
+  // The Zoom slider's TRACK is the field of view in BOTH units, 30..140, and it is
+  // deliberately NOT re-ranged when the unit changes. Two reasons, both measured:
+  //   - "drag right = wider view" is the universal convention (Pannellum, Photo Sphere
+  //     Viewer, and our own degree mode). Inverting mm to make its NUMBER climb would
+  //     have sent the thumb the opposite way to the degree slider sitting beside it.
+  //   - The unit toggle used to teleport the handle across the track: at 100 deg the
+  //     handle sat at 63.6% and in mm at 36.4%. Same range, so it stays put.
+  // In mm the NUMBER falls as you widen, and that is correct optics rather than a bug:
+  // a wider field of view IS a shorter focal length (140 deg = 6.6 mm, 30 deg = 67 mm).
+  // The unit button's tooltip spells that out, which is what removes the confusion.
   const qFov = qSlider("Zoom", "fov", 30, 140, 1, (v) => {
     container._v360?.setFov(v);
     sync();
   });
-  const qAuto = qSlider("Spin", "auto_rotate", 0, 60, 1, () => {
+  // Negative = counter-clockwise. The render loop ADDS the speed to the angle, so a
+  // negative value drifts the other way for free; only the RANGES had to open up.
+  const qAuto = qSlider("Spin", "auto_rotate", -60, 60, 1, () => {
     // refresh() re-reads the drift speed and never moves the camera.
     container._v360?.refresh();
     sync();
@@ -791,7 +863,7 @@ function buildFace(node, container) {
     }
     const za = Number(wget(node, "auto_rotate", 0));
     if (Number.isFinite(za)) {
-      qAuto.input.value = String(clamp(Math.round(za), 0, 60));
+      qAuto.input.value = String(clamp(Math.round(za), -60, 60));
       qAuto.show();
     }
     const zz = Number(wget(node, "z_offset", 0));
@@ -805,8 +877,11 @@ function buildFace(node, container) {
   unitBtn.type = "button";
   unitBtn.title =
     "What the Zoom slider reads. ° FOV is the field of view in degrees; mm is the " +
-    "35 mm-equivalent focal length (derived from the vertical field of view). Switching only " +
-    "changes the numbers, never the view.";
+    "35 mm-equivalent focal length on the 36 mm horizontal frame. Dragging RIGHT always " +
+    "means a WIDER view in both units, so the handle never jumps when you switch. " +
+    "Note the mm NUMBER falls as the view widens, because a wider view is a SHORTER " +
+    "focal length (140° = 6.6 mm, 30° = 67 mm). Switching units changes only the " +
+    "numbers, never the view.";
   unitBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     unit = unit === "mm" ? "deg" : "mm";
@@ -826,7 +901,7 @@ function buildFace(node, container) {
   qRow.append(qFov.wrap, qAuto.wrap, qZ.wrap);
 
   band.append(bMinus, val, bPlus, sw, group);
-  face.append(band, qRow, vp);
+  face.append(band, qRow, vp, title);
   container.appendChild(face);
 
   container._face = { sync, vp };
@@ -962,6 +1037,23 @@ function injectCSS() {
 
     .p360-set svg { display:block; flex:none; pointer-events:none; }
     .p360-grow { margin-left:auto; display:flex; align-items:center; gap:6px; }
+    /* Fullscreen title: absolutely positioned and hidden outside fullscreen, so it
+       costs the sphere zero pixels on the node face. */
+    .p360-title { display:none; }
+    :fullscreen .p360-title { display:flex; position:absolute; top:10px; left:14px; z-index:5;
+      align-items:center; gap:10px; padding:5px 7px 5px 12px; border-radius:6px;
+      background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.14);
+      color:#e6e6ea; font:600 13px ui-sans-serif,system-ui,sans-serif;
+      pointer-events:none; white-space:nowrap; }
+    :fullscreen .p360-title svg { width:15px; height:15px; flex:none; }
+    .p360-titleg { display:flex; align-items:center; justify-content:center; width:26px;
+      height:26px; flex:none; margin:0; padding:0; background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.14); border-radius:5px; color:#8b6cf5; cursor:pointer; }
+    .p360-titleg:hover { background:#8b6cf5; border-color:#8b6cf5; color:#fff; }
+    :fullscreen .p360-title .p360-titleg { pointer-events:auto; }
+    /* Inside a fullscreen element the panel lays out against that element, so it needs
+       a viewport-sized clamp of its own instead of the 88vh the body-parented case uses. */
+    .p360-panel-fs { max-height:82vh; }
     .p360-vp { position:relative; flex:1 1 0; min-height:0; box-sizing:border-box;
       border:1px solid #444; border-radius:4px; overflow:hidden; background:#262626;
       cursor:grab; touch-action:none; }
@@ -1222,9 +1314,9 @@ function openPanel(node) {
   nodeSec.appendChild(
     sliderRow(
       "Auto-rotate",
-      "Degrees per second the view drifts on its own. 0 = off.",
+      "Degrees per second the view drifts on its own. Negative = counter-clockwise. 0 = off.",
       "auto_rotate",
-      0,
+      -60,
       60,
       0.5,
       node,
@@ -1399,6 +1491,56 @@ function togglePanel(node) {
   if (_panel && _panelNode === node) closePanel();
   else openPanel(node);
 }
+
+// ── fullscreen: the settings panel must live INSIDE the fullscreen element ──
+//
+// While anything is fullscreen the browser renders ONLY the fullscreen element's
+// subtree, so a panel parented to document.body is invisible there. It is not a
+// z-index problem and no stacking context can fix it. The panel is therefore MOVED -
+// never rebuilt - into the widget host, which is the element that goes fullscreen, and
+// moved back to the body on exit. Moving rather than rebuilding keeps every bit of panel
+// state across the transition: scroll position, an open dropdown, a half-typed value.
+const _fsPanelHome = { panel: null, parent: null };
+
+function adoptPanelIntoFullscreen(fsEl) {
+  if (!_panel) {
+    // Nothing is open, but an earlier panel may still be parked inside a dead
+    // fullscreen element. Rescue it before the browser tears that element down.
+    if (!fsEl && _fsPanelHome.panel) {
+      try {
+        (_fsPanelHome.parent || document.body).appendChild(_fsPanelHome.panel);
+      } catch (_) {}
+      _fsPanelHome.panel = null;
+      _fsPanelHome.parent = null;
+    }
+    return;
+  }
+  if (fsEl) {
+    if (_fsPanelHome.panel === _panel) return; // already inside
+    _fsPanelHome.panel = _panel;
+    _fsPanelHome.parent = _panel.parentNode;
+    _panel.classList.add("p360-panel-fs");
+    fsEl.appendChild(_panel);
+    // position:fixed still resolves against the viewport while fullscreen (the
+    // fullscreen element is scaled to the screen), so the coordinates stay valid - but
+    // the box still has to be re-placed, because a position computed at node size can
+    // land off-screen once the node is at fullscreen scale.
+    if (_panelNode) placeBeside(_panel, getNodeScreenRect(_panelNode));
+  } else {
+    if (_fsPanelHome.panel) {
+      try {
+        (_fsPanelHome.parent || document.body).appendChild(_fsPanelHome.panel);
+      } catch (_) {}
+      _fsPanelHome.panel = null;
+      _fsPanelHome.parent = null;
+    }
+    if (_panel) _panel.classList.remove("p360-panel-fs");
+  }
+}
+
+document.addEventListener("fullscreenchange", () => {
+  adoptPanelIntoFullscreen(document.fullscreenElement);
+});
 
 // ── widget repair ───────────────────────────────────────────────────────────
 //

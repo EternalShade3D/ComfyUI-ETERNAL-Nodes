@@ -83,11 +83,12 @@ class EternalViewer360(IO.ComfyNode):
                 IO.Float.Input(
                     "auto_rotate",
                     default=0.0,
-                    min=0.0,
+                    min=-60.0,
                     max=60.0,
                     step=0.5,
                     tooltip=(
                         "Degrees per second the view drifts on its own (0 = off). "
+                        "Positive drifts one way, NEGATIVE drifts counter-clockwise. "
                         "Pauses while you drag, resumes when you let go."
                     ),
                 ),
