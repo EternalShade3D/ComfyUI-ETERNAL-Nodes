@@ -1,10 +1,10 @@
 [project]
 name = "eternal-nodes"
-description = "ETERNAL nodes for ComfyUI: Flat Shade Eternal (GPU flat shading via split/crease modes), Mesh Bridge (Types.MESH <-> trimesh), Trimesh to Model3D, Preview 3D Eternal, Video Sizes and Aspect Ratio Size Picker."
-version = "1.0.0"
+description = "ETERNAL nodes for ComfyUI: Panorama 360 Viewer Eternal (interactive equirectangular 360 viewer), Flat Shade Eternal (GPU flat shading via split/crease modes), Mesh Bridge (Types.MESH <-> trimesh), Trimesh to Model3D, Preview 3D Eternal, a tile pipeline for high-res outpainting, Video Sizes and Aspect Ratio Size Picker."
+version = "1.1.0"
 license = { file = "LICENSE" }
 
-keywords = ["comfyui", "eternal", "3d", "mesh", "flat-shade", "trimesh", "glb", "preview"]
+keywords = ["comfyui", "eternal", "3d", "mesh", "flat-shade", "trimesh", "glb", "preview", "360", "panorama", "equirectangular", "tile", "outpaint"]
 
 # No extra deps: torch/numpy/trimesh ship with ComfyUI core.
 dependencies = []
