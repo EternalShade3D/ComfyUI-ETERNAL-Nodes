@@ -63,15 +63,17 @@ workflow or opening a browser tab.
 One-minute screen recording of the node in use — dragging to look around the
 sphere, zooming, the auto-rotate toggle, and the settings panel.
 
-https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/download/v1.1.0/panorama360_viewer_demo.mp4
+![Panorama 360 Viewer Eternal inside a ComfyUI workflow](docs/panorama360_viewer_demo.gif)
 
-![Panorama 360 Viewer Eternal inside a ComfyUI workflow](docs/panorama360_viewer_poster.png)
+*Live preview — drag the sphere, scroll to zoom. The node title, `FOV`,
+`Spin` and `Height` controls are all real, not a mock-up.*
 
-*Still frame: the node mid-graph with an equirectangular interior wired in.*
+📥 **Full 60-second recording (1080p):**
+[download `panorama360_viewer_demo.mp4`](https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/download/v1.1.0/panorama360_viewer_demo.mp4)
+— also attached to the [v1.1.0 release](https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/tag/v1.1.0).
 
-> Direct `.mp4` on GitHub needs the H.264 codec — the file is H.264, so it
-> plays inline in Chrome, Edge, Firefox and Safari. If your browser shows a
-> blank frame, the download link above is right there.
+> GitHub does not autoplay uploaded `.mp4` in a README, which is why the
+> animated GIF leads and the recording is a download.
 
 ### How to use
 1. Wire any image into `image` (it must be **equirectangular, 2:1**).
