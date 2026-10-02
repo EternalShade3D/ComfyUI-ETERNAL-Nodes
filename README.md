@@ -58,6 +58,20 @@ at the point of confusion:
 The node that makes this release: inspect a 360° panorama without leaving your
 workflow or opening a browser tab.
 
+### See it in action
+
+One-minute screen recording of the node in use — dragging to look around the
+sphere, zooming, the auto-rotate toggle, and the settings panel.
+
+https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/blob/main/docs/panorama360_viewer_demo.mp4
+
+<details>
+<summary>Prefer a poster still? Click here</summary>
+
+![Panorama 360 Viewer Eternal inside a ComfyUI workflow](docs/panorama360_viewer_poster.png)
+
+</details>
+
 ### How to use
 1. Wire any image into `image` (it must be **equirectangular, 2:1**).
 2. Run the workflow — the sphere builds inside the node.
