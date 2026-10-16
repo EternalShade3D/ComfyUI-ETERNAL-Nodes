@@ -1,5 +1,9 @@
 # ComfyUI-ETERNAL-Nodes
 
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python)
+![ComfyUI](https://img.shields.io/badge/ComfyUI-node%20pack-000000)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
 Custom ComfyUI nodes by **EternalShade3D** — a single library pack for interactive
 360° panorama inspection, 3D mesh repair/bridging, flat-shade control, a tile
 pipeline for high-resolution outpainting, and image-size picking.
