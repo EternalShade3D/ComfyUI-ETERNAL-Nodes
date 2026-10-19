@@ -1,8 +1,12 @@
 # ComfyUI-ETERNAL-Nodes
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python)
-![ComfyUI](https://img.shields.io/badge/ComfyUI-node%20pack-000000)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+<p align="center">
+  <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/latest"><img src="https://img.shields.io/github/v/release/EternalShade3D/ComfyUI-ETERNAL-Nodes?style=for-the-badge&labelColor=26282e&label=release&color=000000" alt="Latest release"></a>
+  <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/blob/main/pyproject.toml"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&labelColor=26282e&logo=python&logoColor=white" alt="Python 3.10+"></a>
+  <img src="https://img.shields.io/badge/ComfyUI-node%20pack-000000?style=for-the-badge&labelColor=26282e&logo=comfyui&logoColor=white" alt="ComfyUI node pack">
+  <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes"><img src="https://img.shields.io/badge/Comfy%20Registry-pending%20publish-000000?style=for-the-badge&labelColor=26282e&logo=comfyui&logoColor=white" alt="Comfy Registry, pending publish"></a>
+  <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge&labelColor=26282e" alt="License: MIT"></a>
+</p>
 
 Custom ComfyUI nodes by **EternalShade3D** — a single library pack for interactive
 360° panorama inspection, 3D mesh repair/bridging, flat-shade control, a tile
