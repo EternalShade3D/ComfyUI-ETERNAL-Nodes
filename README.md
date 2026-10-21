@@ -36,23 +36,10 @@ with any node-color picker afterwards).
 Full details for each node in the sections below.
 
 
-### 🗄 `_archive` — kept only so old workflows still load
-
-Five nodes are superseded. They stay registered on purpose, under `🗄 _archive`,
-and each one's **name points at its replacement**, so you can see the migration
-at the point of confusion:
-
-| Archived node | Use instead |
-| --- | --- |
-| `(old) TILE GRID` | **TILE PREPARE** |
-| `(old) TILE SPLIT` | **TILE PREPARE** |
-| `(old) TILES → VL` | **TILE PREPARE** (it has a `tile` output) |
-| `(old) PER-TILE PROMPT` | **PROMPT FOR TILE #N** |
-| `(old) VL PROMPTS → PANEL` | **TILE PROMPT PANEL** (wire `auto_prompts`) |
 
 ## Repository layout
 
-Mirrors the Pixaroma pack: a thin root, every node in `nodes/`, every front-end file in `js/`.
+Structure **inspired by** the Pixaroma pack (not a copy of it): a thin root, every node in `nodes/`, every front-end file in `js/`.
 
 | Path | What lives there |
 |------|------------------|
@@ -144,6 +131,20 @@ Both snapped to a multiple of 8 for ComfyUI latent alignment. Wire into an
 Aspect Ratio Size Picker ──width──▶ Empty Latent Image
                        └─height─┘
 ```
+
+## 🗄 `_archive` — kept only so old workflows still load
+
+Five nodes are superseded. They stay registered on purpose, under `🗄 _archive`,
+and each one's **name points at its replacement**, so you can see the migration
+at the point of confusion:
+
+| Archived node | Use instead |
+| --- | --- |
+| `(old) TILE GRID` | **TILE PREPARE** |
+| `(old) TILE SPLIT` | **TILE PREPARE** |
+| `(old) TILES → VL` | **TILE PREPARE** (it has a `tile` output) |
+| `(old) PER-TILE PROMPT` | **PROMPT FOR TILE #N** |
+| `(old) VL PROMPTS → PANEL` | **TILE PROMPT PANEL** (wire `auto_prompts`) |
 
 ## Install
 
