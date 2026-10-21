@@ -6,8 +6,8 @@ license = { file = "LICENSE" }
 
 keywords = ["comfyui", "eternal", "3d", "mesh", "flat-shade", "trimesh", "glb", "preview", "360", "panorama", "equirectangular", "tile", "outpaint"]
 
-# No extra deps: torch/numpy/trimesh ship with ComfyUI core.
-dependencies = []
+# trimesh is NOT in ComfyUI core requirements (verified) — the 3D nodes import it.
+dependencies = ["trimesh"]
 
 requires-python = ">=3.10"
 
