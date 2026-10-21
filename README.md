@@ -67,12 +67,11 @@ workflow or opening a browser tab.
 [download `panorama360_viewer_demo.mp4`](https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/download/v1.1.0/panorama360_viewer_demo.mp4)
 — also attached to the [v1.1.0 release](https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/tag/v1.1.0).
 
-> **Why a GIF and not the video?** GitHub serves README media as
-> `application/octet-stream` and strips `<video>` tags, and its file viewer
-> refuses anything over 10 MB — it answers *"we can't show files that are
-> this big right now."* An animated GIF is the only thing that actually
-> plays on the repo page, so that is what leads here. The MP4 above is the
-> full-quality version if you want the whole minute.
+> **Why a GIF and not the video?** GitHub strips `<video>` tags from READMEs
+> and serves committed files as plain downloads, so an mp4 can never play on
+> the repo page — an animated GIF is the only thing that actually plays, so
+> that is what leads here. The MP4 above is the full-quality version if you
+> want the whole minute.
 
 ### How to use
 1. Wire any image into `image` (it must be **equirectangular, 2:1**).
