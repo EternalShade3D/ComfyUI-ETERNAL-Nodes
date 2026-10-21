@@ -25,7 +25,6 @@ with any node-color picker afterwards).
 | **Mesh Bridge Eternal** | `🧊 3D` | `mesh`+`trimesh` → `mesh`+`trimesh` | Bridges core `Types.MESH` ↔ `trimesh.Trimesh` — feed one side, get both. |
 | **Flat Shade Eternal** | `🧊 3D` | `mesh`+`trimesh` → `mesh`+`trimesh` | Bakes flat shading (`split` or `crease` mode). |
 | **Trimesh to Model3D Eternal** | `🧊 3D` | `TRIMESH` → `FILE_3D_GLB` | Mesh → GLB in one node. |
-| **Preview 3D Eternal** | `🧊 3D` | `FILE_3D_*` → viewer | In-node 3D viewer, settings persist per node. |
 | **Video Sizes Eternal** | `🔢 Sizes` | → sizes | Aspect-ratio + long-edge picker for latent sizing. |
 | **Aspect Ratio Size Picker** | `🔢 Sizes` | → `width`, `height` | Ratio dropdown + long-edge slider, snapped to ×8. |
 | **TILE PREPARE ETERNAL** | `🧩 Tiles` | `IMAGE` → whole `IMAGE` + tiles | Plans the grid, emits the crop plus a per-tile list. |
@@ -144,6 +143,7 @@ at the point of confusion:
 | `(old) TILES → VL` | **TILE PREPARE** (it has a `tile` output) |
 | `(old) PER-TILE PROMPT` | **PROMPT FOR TILE #N** |
 | `(old) VL PROMPTS → PANEL` | **TILE PROMPT PANEL** (wire `auto_prompts`) |
+| **Preview 3D Eternal** | core `Preview 3D (Advanced)` — dev cancelled, kept only so old workflows load |
 
 ## Install
 
