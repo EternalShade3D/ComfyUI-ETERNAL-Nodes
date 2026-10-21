@@ -19,6 +19,7 @@ classifiers = [
 [project.urls]
 Repository = "https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes"
 Issues = "https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/issues"
+Documentation = "https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes#readme"
 
 [tool.comfy]
 PublisherId = "EternalShade3D"
