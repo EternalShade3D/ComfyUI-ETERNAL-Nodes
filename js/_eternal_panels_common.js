@@ -373,7 +373,7 @@ function stitchFromTiles(tiles, geom, dir) {
 // unless it is over a region that can actually scroll.
 // The grid must mirror the real split: 2x2 stays 2x2 (not a 1x4 array) and each
 // cell takes the tile's own aspect ratio, so thumbs scale with the node.
-export function applyGridShape(g, m) {
+export function applyGridShape(g, m, width) {
   const one_ = (v) => (Array.isArray(v) ? v[0] : v);
   const cols = Number(one_(m?.cols ?? m?.geom?.cols ?? 0)) || 0;
   const tw = Number(one_(m?.tile_w ?? m?.geom?.tile_w ?? 0)) || 0;
@@ -381,12 +381,14 @@ export function applyGridShape(g, m) {
   if (!g) return;
   // columns = the split's real columns; every cell keeps the tile's aspect ratio,
   // so the whole grid scales with the node width instead of wrapping or clipping
-  if (cols > 0) {
+  const MIN_TILE = 120;   // below this per column the exact grid would squash the thumbs
+  const avail = Number(width) || g.clientWidth || 0;
+  if (cols > 0 && (!avail || avail >= cols * MIN_TILE)) {
     g.classList.add("exact");
     g.style.setProperty("--cols", String(cols));
   } else {
     g.classList.remove("exact");
-    g.style.removeProperty("--cols");
+    g.style.removeProperty("--cols");   // reflows with the node width, aspect per cell preserved
   }
   if (tw > 0 && th > 0) g.style.setProperty("--ar", tw + " / " + th);
   else g.style.removeProperty("--ar");
