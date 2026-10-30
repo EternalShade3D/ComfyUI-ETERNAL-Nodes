@@ -176,6 +176,11 @@ class TileSplitEternal:
             # stitches and colour-matches against these and needs real sizes
             _os.makedirs(cut_dir, exist_ok=True)
             _os.makedirs(src_dir, exist_ok=True)
+            # one downscaled copy of the WHOLE source: the panel draws the tile
+            # grid as lines on top of it instead of a wall of thumbnails
+            whole = _Img.fromarray((np.clip(src[:, :, :3], 0, 1) * 255).astype(np.uint8))
+            whole.thumbnail((1600, 1600))
+            whole.save(_os.path.join(run_dir, "source.png"))
             for i in range(total):
                 im = _Img.fromarray((np.clip(crops[i][:, :, :3], 0, 1) * 255).astype(np.uint8))
                 im.save(_os.path.join(src_dir, "T%02d.png" % i))   # full size: colour match
@@ -188,6 +193,8 @@ class TileSplitEternal:
             "tiles": [{"i": i} for i in range(total)],   # pictures come from /view, not base64
             "cols": [cols], "rows": [rows], "total": [total], "report": [report],
             "tile_w": [tw], "tile_h": [th],
+            "source_w": [source_w], "source_h": [source_h],
+            "px": [px], "py": [py], "source_file": ["source.png"],
             "run_key": [key], "cache_dir": [cache_dir_v],
         }
         return {

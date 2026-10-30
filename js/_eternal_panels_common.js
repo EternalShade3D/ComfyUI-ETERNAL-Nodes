@@ -50,6 +50,18 @@ const CSS = `
 .etp .hit.sel b { color:#ffd24e; background:rgba(0,0,0,.55); }
 .etp .stage.compact { max-height:220px; }
 .etp .scroll { overflow:visible; }        /* the PANEL scrolls, not the grid */
+.etp .preview { flex:1 1 auto; min-height:120px; position:relative; display:flex;
+                align-items:center; justify-content:center; background:#0b0d11;
+                border:1px solid #2b2f38; border-radius:6px; overflow:hidden; }
+.etp .preview .inner { position:relative; width:100%; height:100%; }
+.etp .preview img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
+                    -webkit-user-drag:none; user-select:none; }
+.etp .tcell { position:absolute; box-sizing:border-box; border:1px solid rgba(120,190,255,.55);
+              pointer-events:none; }
+.etp .tcell b { position:absolute; left:2px; top:1px; font:600 9px/1 system-ui,sans-serif;
+                color:#cfe4ff; background:rgba(0,0,0,.45); padding:1px 3px; border-radius:2px; }
+.etp .preview .none { position:absolute; inset:0; display:flex; align-items:center;
+                      justify-content:center; color:#6f7787; font-size:11px; }
 .etp .grid.scroll { max-height:none; }
 .etp .grow { flex:1 1 auto; min-height:0; }
 .etp .field { display:flex; align-items:center; gap:8px; padding:3px 6px; border-radius:6px;
@@ -175,6 +187,32 @@ function fitPanel(node) {
   // scrolls) and the node is sized from that. No absolute overlay, no constant
   // height fed back into the node - that combination is what clipped the grid.
   const apply = () => {
+    // free-size nodes (the split preview) are owned by the user: fill the body,
+    // never resize the node, so vertical + horizontal drag both work
+    if (node._etFreeSize) {
+      const top = node._etTop || 6;
+      // a collapsed-looking box (height ~12) is never what the user wants: put a
+      // sane height back, every layout pass, until it sticks
+      if (node.size[1] < 200) {
+        node._etSelfResize = true;
+        node.setSize([Math.max(node.size[0], 480), 520]);
+        node._etSelfResize = false;
+        app.graph?.setDirtyCanvas?.(true, true);
+      }
+      const h = Math.max(120, node.size[1] - top - 8);
+      root.style.height = "100%";
+      root.style.overflow = "hidden";
+      el.style.height = h + "px";
+      el.style.minHeight = "0";
+      // CONSTANT computeSize: deriving it from node.size made the node collapse
+      // to 12px (and, the other way round, inflate). The element is stretched by
+      // style only.
+      w.computeSize = (width) => [width || node.size[0], 240];
+      const wrap = el.parentElement;
+      if (wrap && wrap !== root) { wrap.style.height = h + "px"; wrap.style.minHeight = "0"; wrap.style.overflow = "visible"; }
+      if (node._etLayout) [0, 80].forEach((t) => setTimeout(node._etLayout, t));
+      return;
+    }
     const CAP = 2400;      // effectively: the panel grows to its content, nothing is cut
     const natural = Math.ceil(root.scrollHeight) + 10;
     const content = Math.min(Math.max(natural, 160), CAP);
@@ -468,7 +506,13 @@ function registerPanel(nodeName, widgetType, builder) {
       const created = nodeType.prototype.onNodeCreated;
       nodeType.prototype.onNodeCreated = function () {
         const r = created?.apply(this, arguments);
-        const panelEl = builder(this);
+        let panelEl;
+        try {
+          panelEl = builder(this);
+        } catch (err) {
+          console.error("[ETERNAL panel] builder failed for " + nodeName, err);
+          throw err;
+        }
         this.addDOMWidget("et_panel", widgetType, panelEl, {
           getValue: () => "", setValue: () => {}, serialize: false, hideOnZoom: false,
         });
@@ -499,7 +543,18 @@ function registerPanel(nodeName, widgetType, builder) {
         this._etManual = false;
         this._etLoading = true;          // restore() resizes; do not read that as a drag
         fitPanel(this);
-        setTimeout(() => { this._etLoading = false; syncPanelBox(this); }, 600);
+        setTimeout(() => {
+          this._etLoading = false;
+          // a free-size node can come back collapsed (height ~12) from a saved
+          // workflow - restore a usable box once, then never touch it again
+          if (this._etFreeSize && this.size[1] < 200) {
+            this._etSelfResize = true;
+            this.setSize([Math.max(this.size[0], 480), 520]);
+            this._etSelfResize = false;
+            app.graph?.setDirtyCanvas?.(true, true);
+          }
+          syncPanelBox(this);
+        }, 600);
         setTimeout(() => { if (!this._etManual) fitPanel(this); }, 900);
         setTimeout(() => {
           // a node saved taller than its panel leaves a band of empty purple
