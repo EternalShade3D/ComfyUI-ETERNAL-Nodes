@@ -1,3 +1,8 @@
 node_modules/
 __pycache__/
 *.pyc
+*.bak
+*.bak_*
+.bak/
+.hermes-tmp.*
+__pycache__/

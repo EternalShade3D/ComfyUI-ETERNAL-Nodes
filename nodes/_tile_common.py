@@ -6,13 +6,15 @@ and TileStitchEternal can never disagree about where a tile belongs.
 
 Contract
 --------
-* Tiles are always multiples of 16 (safe for VAE / latent models).
+* Tiles are always multiples of SNAP = 32 (see the note on SNAP below:
+  Qwen-Image 2.1 rounds every reference to a multiple of 32, so a 16-snapped
+  tile comes back 16 px narrower and the stitch can't place it).
 * Tile positions are EVENLY SPREAD and the LAST tile ends EXACTLY at the
   source edge:   pos(i) = round(i * (source - tile) / (n - 1))
   Consequence: for n >= 2 NO tile ever extends past the source, so there is
   ZERO edge padding and no stretched/clamped pixels in a tile.
-* When an axis needs only ONE tile and the source is not a multiple of 16,
-  the tile is snapped UP, so at most 15 px of replicated edge exist. The
+* When an axis needs only ONE tile and the source is not a multiple of SNAP,
+  the tile is snapped UP, so at most SNAP-1 px of replicated edge exist. The
   stitch crops back to the source size, so the output is still exact.
 * Output size always equals source size: stitch crops to (source_h, source_w).
 """
@@ -23,25 +25,44 @@ import math
 from typing import List, Tuple
 
 __all__ = [
-    "snap16_up", "snap16_down", "plan_axis", "positions",
+    "snap_up", "snap_down", "snap16_up", "snap16_down", "plan_axis", "positions",
     "plan_grid", "best_split", "tile_dims", "effective_overlap",
 ]
 
+# Tile dimensions must be a multiple of SNAP.
+# 16 is enough for a plain VAE (8-px latent, even latent dims), but NOT for
+# Qwen-Image 2.1: comfy_extras/nodes_qwen.py:160 (TextEncodeQwenImage21) does
+#     width, height = round(w / 32) * 32, round(h / 32) * 32
+# so a 1552 px tile comes back 1536 px, the stitch has a 1552 px weight mask,
+# and the placement math is wrong by 16 px (ValueError broadcast, or a seam).
+# 32 keeps every tile through the model untouched.
+SNAP = 32
+
 
 def snap16_up(n: int) -> int:
-    """Round UP to the nearest multiple of 16 (minimum 16)."""
+    """Round UP to the nearest multiple of SNAP (minimum SNAP)."""
     n = int(n)
-    if n < 16:
-        return 16
-    return ((n + 15) // 16) * 16
+    if n < SNAP:
+        return SNAP
+    return ((n + SNAP - 1) // SNAP) * SNAP
+
+
+def snap_up(n: int) -> int:
+    """Round UP to the nearest multiple of SNAP (preferred name)."""
+    return snap16_up(n)
+
+
+def snap_down(n: int) -> int:
+    """Round DOWN to the nearest multiple of SNAP (preferred name)."""
+    return snap16_down(n)
 
 
 def snap16_down(n: int) -> int:
-    """Round DOWN to the nearest multiple of 16 (minimum 16)."""
+    """Round DOWN to the nearest multiple of SNAP (minimum SNAP)."""
     n = int(n)
-    if n < 16:
-        return 16
-    return max(16, (n // 16) * 16)
+    if n < SNAP:
+        return SNAP
+    return max(SNAP, (n // SNAP) * SNAP)
 
 
 def positions(source: int, tile: int, n: int) -> List[int]:
@@ -81,16 +102,16 @@ def plan_axis(source: int, tile_target: int, overlap: int,
     """
     source = int(source)
     overlap = max(0, int(overlap))
-    tile_target = max(16, int(tile_target))
+    tile_target = max(SNAP, int(tile_target))
 
     if n_fixed is not None:
         n = max(1, int(n_fixed))
     else:
-        step = max(16, tile_target - overlap)
+        step = max(SNAP, tile_target - overlap)
         n = max(1, math.ceil((source - overlap) / step))
 
     if n == 1:
-        # one tile must cover the whole axis; snap up (<= 15 px replicated,
+        # one tile must cover the whole axis; snap up (<= SNAP-1 px replicated,
         # cropped away by the stitch).
         tile = snap16_up(source)
         return 1, tile
@@ -157,8 +178,8 @@ def best_split(w: int, h: int, total: int, aspect: str = "Square tiles"):
 def tile_dims(w: int, h: int, rows: int, cols: int,
               overlap: int) -> Tuple[int, int, int, int]:
     """(tile_w, tile_h, overlap_x, overlap_y) for a fixed rows/cols grid."""
-    _, tile_w = plan_axis(w, max(16, w // max(1, cols)), overlap, n_fixed=cols)
-    _, tile_h = plan_axis(h, max(16, h // max(1, rows)), overlap, n_fixed=rows)
+    _, tile_w = plan_axis(w, max(SNAP, w // max(1, cols)), overlap, n_fixed=cols)
+    _, tile_h = plan_axis(h, max(SNAP, h // max(1, rows)), overlap, n_fixed=rows)
     ov_x = effective_overlap(w, tile_w, cols)
     ov_y = effective_overlap(h, tile_h, rows)
     return tile_w, tile_h, ov_x, ov_y
@@ -172,7 +193,7 @@ def auto_count(w: int, h: int, target_tile: int, overlap: int,
     2 tiles of 1632x784). This scores each candidate on aspect deviation plus a
     penalty for exceeding / undershooting the requested tile size.
     """
-    T = max(16, int(target_tile))
+    T = max(SNAP, int(target_tile))
     w = max(1, int(w))
     h = max(1, int(h))
     try:
@@ -217,7 +238,7 @@ def plan_grid(w: int, h: int, mode: str, target_tile: int, overlap: int,
     """
     w = max(1, int(w))
     h = max(1, int(h))
-    target_tile = max(16, int(target_tile))
+    target_tile = max(SNAP, int(target_tile))
     overlap = max(0, int(overlap))
 
     if mode == "Manual rows x cols":

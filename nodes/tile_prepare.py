@@ -15,7 +15,7 @@ job with one output shape. Splitting them across nodes only created the
 question "which one actually does it?".
 
 Key guarantees (see _tile_common):
-* tile sizes are multiples of 16
+* tile sizes are multiples of 32 (Qwen-Image 2.1 rounds refs to 32)
 * tiles are evenly spread and the LAST tile ends exactly at the source edge,
   so nothing is edge-padded/stretched for multi-tile axes
 * the stitch crops back to source_w x source_h = the size you picked before
@@ -132,8 +132,8 @@ class TilePrepareEternal:
         "Tile batch (row-major) -> the loop, and the prompt panel.",
         "Output width == your input width.",
         "Output height == your input height.",
-        "Tile width (multiple of 16).",
-        "Tile height (multiple of 16).",
+        "Tile width (multiple of 32).",
+        "Tile height (multiple of 32).",
         "Tile rows.",
         "Tile columns.",
         "Real X overlap.",

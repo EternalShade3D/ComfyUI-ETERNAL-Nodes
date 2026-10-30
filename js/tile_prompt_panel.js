@@ -26,8 +26,8 @@ const MAX_H = 4000;
 
 const thumbOf = (node) => {
   const w = (node.widgets || []).find((x) => x.name === "thumb_side");
-  const v = parseInt(w ? w.value : 192, 10);
-  return Number.isFinite(v) ? Math.min(512, Math.max(64, v)) : 192;
+  const v = parseInt(w ? w.value : 160, 10);
+  return Number.isFinite(v) ? Math.min(512, Math.max(64, v)) : 160;
 };
 
 const colW = (node) => thumbOf(node) + 14;
@@ -40,7 +40,7 @@ function naturalSize(node, width) {
   const cols = Math.max(1, Math.floor((w - 18) / colW(node)));
   const rows = Math.ceil(n / cols);
   const h = HEADER_H + rows * cellH(node) + FOOTER_H;
-  return [w, Math.min(1500, Math.max(160, h))];
+  return [w, Math.min(MAX_H, Math.max(160, h))];
 }
 
 function tileSignature(node, data) {
@@ -48,7 +48,11 @@ function tileSignature(node, data) {
   return [
     tiles.length,
     thumbOf(node),
-    (data && data.global ? data.global.length : 0),
+    JSON.stringify((data && data.global) || []),
+    String((data && data.expected) != null ? data.expected : ""),
+    String((data && data.mismatch) != null ? data.mismatch : ""),
+    tiles.map((t) => (t && t.auto ? t.auto.length : 0)).join(","),
+    Array.isArray(data && data.prompts) ? data.prompts.join("|") : "",
     tiles.map((t) => (t && t.thumb ? t.thumb.length : 0)).join(","),
   ].join("|");
 }
@@ -151,7 +155,6 @@ function buildCell(node, tile, stored, index, redraw) {
     timer = setTimeout(() => {
       storeStored(node, stored);
       setBadge(ta.value.trim() && ta.value.trim() !== autoText, autoText);
-      redraw();
     }, 250);
   });
   cell.appendChild(ta);
@@ -283,13 +286,7 @@ function ensureWidget(node) {
   });
   widget.computeSize = (width) => {
     const [w, h] = naturalSize(node, width);
-    // NEVER fold node.size[1] in here. LiteGraph assigns this return value to
-    // node.size[1], so max(content, nodeH) ratchets up on every layout pass and
-    // the node grows down the canvas forever. Height comes from content ONLY.
     const clamped = Math.min(MAX_H, Math.max(MIN_H, h));
-    // `width` is the NEW width being laid out - use it, not node.size[0], or the
-    // element lags one resize behind. This is what makes the tiles reflow into
-    // more columns as you drag the node wider (legacy UI included).
     pinWidth(node, (Number(width) || (node.size ? node.size[0] : 340)) - 28);
     return [w, clamped];
   };
@@ -334,7 +331,9 @@ function ensureWidget(node) {
     thumbW.callback = (v, ...rest) => {
       if (typeof orig === "function") orig.call(thumbW, v, ...rest);
       renderPanel(node);
-      node.setSize(naturalSize(node, node.size ? node.size[0] : 360));
+      const [w, h] = naturalSize(node, node.size ? node.size[0] : 360);
+      node.size = [w, h];
+      if (node.setSize) node.setSize([w, h]);
     };
   }
 
@@ -363,13 +362,15 @@ app.registerExtension({
       st.raw = data;
       st.tiles = Array.isArray(data.tiles) ? data.tiles : [];
       st.globalText = first(data.global, "");
-      st.expected = first(data.expected, st.tiles.length);
+      st.expected = first(data.expected, st.tiles.length) || st.tiles.length;
       st.mismatch = !!first(data.mismatch, false);
       if (sig === st.sig) return; // same tiles -> do not rebuild (no duplicates)
       st.sig = sig;
       renderPanel(this);
       const [w, h] = naturalSize(this, this.size ? this.size[0] : 360);
-      this.setSize([w, h]);
+      this.size = [w, h];
+      if (this.setSize) this.setSize([w, h]);
+      if (this.graph) this.graph.setDirtyCanvas(true, true);
     };
 
     const onRemoved = nodeType.prototype.onRemoved;
