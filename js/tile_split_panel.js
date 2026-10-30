@@ -11,6 +11,7 @@ import {
   tileName,
   setTileImg,
   fitPanel,
+  refit,
   persist,
   restorePayload,
   queue,

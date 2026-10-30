@@ -22,6 +22,7 @@ const CSS = `
               align-items:center; justify-content:center; text-align:center; padding:10px;
               color:#6f7787; font-size:11px; line-height:1.5; }
 .etp .grid { display:grid; gap:6px; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); }
+.etp .grid.exact { grid-template-columns:repeat(var(--cols, 2), minmax(0, 1fr)); }
 
 .etp .grid.bounded { overflow-y:visible; padding-right:2px; }
 .etp .cell { background:#14161b; border:1px solid #2b2f38; border-radius:6px; overflow:hidden;
@@ -374,13 +375,19 @@ function stitchFromTiles(tiles, geom, dir) {
 // cell takes the tile's own aspect ratio, so thumbs scale with the node.
 export function applyGridShape(g, m) {
   const one_ = (v) => (Array.isArray(v) ? v[0] : v);
+  const cols = Number(one_(m?.cols ?? m?.geom?.cols ?? 0)) || 0;
   const tw = Number(one_(m?.tile_w ?? m?.geom?.tile_w ?? 0)) || 0;
   const th = Number(one_(m?.tile_h ?? m?.geom?.tile_h ?? 0)) || 0;
   if (!g) return;
-  // Always a plain auto-fill grid: readable cells at any node width, no column
-  // maths, nothing that can collapse into a single row (that was my last bug).
-  g.classList.remove("exact");
-  g.style.removeProperty("--cols");
+  // columns = the split's real columns; every cell keeps the tile's aspect ratio,
+  // so the whole grid scales with the node width instead of wrapping or clipping
+  if (cols > 0) {
+    g.classList.add("exact");
+    g.style.setProperty("--cols", String(cols));
+  } else {
+    g.classList.remove("exact");
+    g.style.removeProperty("--cols");
+  }
   if (tw > 0 && th > 0) g.style.setProperty("--ar", tw + " / " + th);
   else g.style.removeProperty("--ar");
 }
@@ -529,7 +536,6 @@ function registerPanel(nodeName, widgetType, builder) {
 }
 
 export {
-  refit,
   applyOverlay,
   ensureCss, mk, widgetOf, hideWidget, setWidget, one, viewUrl, dirOf, tileName, setTileImg,
   fitPanel, persist, restorePayload, queue, upstream, findUpstream, makeBA, stitchFromTiles,
