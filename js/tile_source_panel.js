@@ -68,7 +68,7 @@ function buildSourcePanel(node) {
     while (body.firstChild) body.removeChild(body.firstChild);
     const grid = mk("div", "grid exact scroll grow");
     st.shape = { cols: one(msg.cols, 0), tile_w: one(msg.tile_w, 0), tile_h: one(msg.tile_h, 0) };
-    node._etLayout = () => applyGridShape(grid, st.shape, grid.clientWidth || (node.size[0] - 12));
+    node._etLayout = () => applyGridShape(grid, st.shape);   // pinned columns + tile aspect, re-applied on resize
     node._etLayout();   // exact only when the width honors the real columns; below that it reflows
     boxes.length = 0;
     const dirCut = dirOf(cacheDir, key, "cut");
