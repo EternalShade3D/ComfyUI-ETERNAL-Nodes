@@ -39,14 +39,18 @@ function buildSourcePanel(node) {
   let saveTimer = null;
   function writePrompts() {
     clearTimeout(saveTimer);
+    // snapshot NOW: a run landing inside the 400 ms window rebuilds `boxes` and
+    // st.key, and a late timer must still write the lines the user actually typed
+    const lines = boxes.map((t) => t.value.replace(/\n/g, " "));
+    const key = st.key || "", dir = st.cacheDir || "ETERNAL_TILES";
     saveTimer = setTimeout(() => {
       fetch("/eternal/prompts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          run_key: st.key || "",
-          cache_dir: st.cacheDir || "ETERNAL_TILES",
-          lines: boxes.map((t) => t.value.replace(/\n/g, " ")),
+      body: JSON.stringify({
+          run_key: key,
+          cache_dir: dir,
+          lines,
         }),
       }).catch(() => {});
     }, 400);

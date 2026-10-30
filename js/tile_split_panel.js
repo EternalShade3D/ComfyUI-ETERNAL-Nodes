@@ -29,7 +29,19 @@ function buildSplitPanel(node) {
   const root = mk("div", "etp");
   node._etRoot = root;
   // use the band beside the 12 output sockets instead of leaving it empty
-  hideWidget(node, "cache_dir");   // set once here, read by the other nodes
+  // cache_dir is read by every downstream node through the geometry socket, so it
+  // gets a real input here - hiding the widget with no control would freeze it at the default.
+  const cdw = widgetOf(node, "cache_dir");
+  if (cdw) {
+    const row = mk("div", "field");
+    const inp = document.createElement("input");
+    inp.type = "text"; inp.value = cdw.value || "ETERNAL_TILES";
+    inp.style.cssText = "flex:1 1 auto;min-width:120px;background:#0f1116;color:#e6e6e6;border:1px solid #2b2f38;border-radius:4px;padding:2px 4px;font:11px/1.3 inherit;";
+    inp.onchange = () => setWidget(node, "cache_dir", inp.value.trim() || "ETERNAL_TILES");
+    row.append(mk("label", null, "cache dir"), inp);
+    root.append(row);
+    hideWidget(node, "cache_dir");
+  }
 
   const fields = [
     { name: "tiles", label: "tiles (0=auto)", min: 0, max: 64, step: 1 },

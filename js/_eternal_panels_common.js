@@ -74,10 +74,6 @@ const CSS = `
 .etp .stage .lbl { position:absolute; bottom:4px; font-size:9px; letter-spacing:.08em; padding:1px 4px;
                    background:#000a; border-radius:3px; pointer-events:none; }
 .etp .stage .lbl.l { left:5px; } .etp .stage .lbl.r { right:5px; }
-.etp .hit { position:absolute; border:1px solid #ffffff1f; }
-.etp .hit.hover { border:2px solid #ffd24e; background:#ffd24e14; }
-.etp .hit.sel { border:2px solid #4ea1ff; background:#4ea1ff14; }
-.etp .hit b { position:absolute; left:0; top:0; font-size:9px; padding:0 3px; background:#000b; }
 .etp .row { display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
 .etp button { background:#22303f; color:#dfe8f3; border:1px solid #35506b; border-radius:5px;
               padding:5px 9px; cursor:pointer; font-size:10px; text-transform:uppercase;
@@ -85,6 +81,9 @@ const CSS = `
 .etp button:hover { background:#2c3f54; }
 .etp button.primary { background:#1f6f3f; border-color:#2e9d59; }
 `;
+
+const ETP_TOP = 30;
+const ETP_SOCKET_COL = 150;
 
 function ensureCss() {
   if (document.getElementById("etp-css")) return;
@@ -113,7 +112,7 @@ function setWidget(n, name, v) {
   const w = widgetOf(n, name);
   if (!w) return false;
   w.value = v;
-  try { w.callback?.(v, app.canvas, n, app.canvas.graph_mouse, {}); } catch (e) {}
+  try { w.callback?.(v, app.canvas, n, app.canvas.graph_mouse, w); } catch (e) {}
   return true;
 }
 function one(v, dflt) { return Array.isArray(v) ? (v.length ? v[0] : dflt) : (v ?? dflt); }
@@ -156,12 +155,12 @@ function applyOverlay(node) {
   const el = w && (w.element || w.inputEl);
   if (!el) return;
   const pad = 8;
-  const col = node._etSocketCol || 150;
+  const col = node._etSocketCol || ETP_SOCKET_COL;
   el.style.position = "absolute";
   el.style.left = pad + "px";
-  el.style.top = (node._etTop || 30) + "px";
+  el.style.top = (node._etTop || ETP_TOP) + "px";
   el.style.width = Math.max(240, node.size[0] - col - pad) + "px";
-  el.style.height = Math.max(80, node.size[1] - (node._etTop || 30) - pad) + "px";
+  el.style.height = Math.max(80, node.size[1] - (node._etTop || ETP_TOP) - pad) + "px";
   el.style.minHeight = "0";
 }
 
@@ -175,11 +174,11 @@ function fitPanel(node) {
   // scrolls) and the node is sized from that. No absolute overlay, no constant
   // height fed back into the node - that combination is what clipped the grid.
   const apply = () => {
-    const CAP = 2400;      // effectively: the panel grows to its content, nothing is cut
+    const CAP = 2400;      // content grows to its natural height; past the cap the panel SCROLLS - it is never cut
     const natural = Math.ceil(root.scrollHeight) + 10;
     const content = Math.min(Math.max(natural, 160), CAP);
 
-    root.style.overflowY = "hidden";      // no scroll: every row is on the node
+    root.style.overflowY = natural > CAP ? "auto" : "hidden";  // nothing is cut: the cap gets a scrollbar
     root.style.overflowX = "hidden";
     root.style.height = "auto";
 
@@ -204,10 +203,9 @@ function fitPanel(node) {
   setTimeout(apply, 300);
 }
 
-// New content must be able to resize the node even if the user had dragged it:
-// otherwise the panel is capped, the node stays tall and the last row is cut.
+// A manual drag wins for good: refit keeps the flag, so the node keeps the
+// height the user gave it and the panel scrolls inside it when content exceeds.
 export function refit(node) {
-  node._etManual = false;
   fitPanel(node);
   setTimeout(() => fitPanel(node), 120);
 }
@@ -216,8 +214,8 @@ function persist(node, payload) {
   node.properties = node.properties || {};
   const prev = node.properties.etUi || {};
   node.properties.etUi = Object.assign({}, prev, payload, {
-    key: payload.key || prev.key || "",
-    cache_dir: payload.cache_dir || prev.cache_dir || "ETERNAL_TILES",
+    key: payload.key ?? prev.key ?? "",
+    cache_dir: payload.cache_dir ?? prev.cache_dir ?? "ETERNAL_TILES",
   });
 }
 function restorePayload(node) {
@@ -422,13 +420,13 @@ function syncPanelBox(node) {
   if (!el) return;
 
   const apply = () => {
-    const top = node._etTop || 6;
+    const top = node._etTop || ETP_TOP;
     if (!node._etOverlayLeft) return;
     const h = Math.max(node._etPanelH || 520, node.size[1] - top - 8);
     el.style.position = "absolute";
     el.style.left = "8px";
     el.style.top = top + "px";
-    el.style.width = Math.max(240, node.size[0] - (node._etSocketCol || 112) - 8) + "px";
+    el.style.width = Math.max(240, node.size[0] - (node._etSocketCol || ETP_SOCKET_COL) - 8) + "px";
     el.style.height = h + "px";
     el.style.minHeight = "0";
     node._etRoot.style.height = "100%";
@@ -450,7 +448,6 @@ function syncPanelBox(node) {
 function fitAllOnce() {
   (app.graph?._nodes || []).forEach((n) => {
     if (!n._etRoot || n._etManual) return;
-    n._etManual = false;
     fitPanel(n);
   });
 }
@@ -519,6 +516,12 @@ function registerPanel(nodeName, widgetType, builder) {
         }, 700);
         setTimeout(() => restorePayload(this), 200);
         return r;
+      };
+
+      const removed = nodeType.prototype.onRemoved;
+      nodeType.prototype.onRemoved = function () {
+        try { this._etCleanup?.(); } catch (e) {}
+        return removed?.apply(this, arguments);
       };
 
       const ex = nodeType.prototype.onExecuted;

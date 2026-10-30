@@ -71,7 +71,7 @@ function buildMergePanel(node) {
   }
   function paintFocus() {
     const i = state.hover >= 0 ? state.hover : state.sel;
-    const t = state.tiles[i];
+    const t = state.tiles.find((x) => x.i === i);
     if (!t) return;
     fb.set(viewUrl(dirOf(state.dir, "", "cut"), tileName(t.i)), viewUrl(state.dir, tileName(t.i), true));
   }
@@ -93,12 +93,12 @@ function buildMergePanel(node) {
     const inner = ba.stage.querySelector(".inner");
     if (!inner) return;
     const tw = Math.min(g.tile_w, g.source_w), th = Math.min(g.tile_h, g.source_h);
-    state.tiles.forEach((t, i) => {
-      const r = (i / Math.max(1, g.cols)) | 0, c = i % Math.max(1, g.cols);
+    state.tiles.forEach((t) => {
+      const r = (t.i / Math.max(1, g.cols)) | 0, c = t.i % Math.max(1, g.cols);
       const x0 = Array.isArray(g.px) && g.px.length ? g.px[c] : c * (g.source_w - tw) / Math.max(1, g.cols - 1);
       const y0 = Array.isArray(g.py) && g.py.length ? g.py[r] : r * (g.source_h - th) / Math.max(1, g.rows - 1);
       const d = mk("div", "hit");
-      d.dataset.i = i;
+      d.dataset.i = t.i;
       d.style.left = (100 * x0 / g.source_w) + "%";
       d.style.top = (100 * y0 / g.source_h) + "%";
       d.style.width = (100 * tw / g.source_w) + "%";
@@ -121,11 +121,11 @@ function buildMergePanel(node) {
     const x = (e.clientX - r.left) / r.width * g.source_w;
     const y = (e.clientY - r.top) / r.height * g.source_h;
     const tw = Math.min(g.tile_w, g.source_w), th = Math.min(g.tile_h, g.source_h);
-    for (let i = 0; i < state.tiles.length; i++) {
-      const row = (i / Math.max(1, g.cols)) | 0, col = i % Math.max(1, g.cols);
+    for (const t of state.tiles) {
+      const row = (t.i / Math.max(1, g.cols)) | 0, col = t.i % Math.max(1, g.cols);
       const x0 = Array.isArray(g.px) && g.px.length ? g.px[col] : col * (g.source_w - tw) / Math.max(1, g.cols - 1);
       const y0 = Array.isArray(g.py) && g.py.length ? g.py[row] : row * (g.source_h - th) / Math.max(1, g.rows - 1);
-      if (x >= x0 && x < x0 + tw && y >= y0 && y < y0 + th) return i;
+      if (x >= x0 && x < x0 + tw && y >= y0 && y < y0 + th) return t.i;
     }
     return -1;
   }
@@ -154,7 +154,12 @@ function buildMergePanel(node) {
     [ba.stage, ba.stage.querySelector(".inner")].forEach((el) => el && ro.observe(el));
     node._etRO = ro;
   }
-  window.addEventListener("resize", relayout);
+  node._etCleanup = () => {
+    window.removeEventListener("resize", onWindowResize);
+    try { node._etRO?.disconnect(); } catch (e) {}
+  };
+  const onWindowResize = () => relayout();
+  window.addEventListener("resize", onWindowResize);
 
   function scheduleStitch() {
     clearTimeout(stitchTimer);
@@ -172,6 +177,7 @@ function buildMergePanel(node) {
     const key = one(msg.run_key, state.liveKey || state.key);
     if (!key) return;
     state.liveKey = key;
+    state.key = key;   // redo() must use THIS run, not the previous one
     state.dir = dirOf(one(msg.cache_dir, "ETERNAL_TILES"), key, "");
     const raw = Array.isArray(msg.tiles) ? msg.tiles : [];
     state.tiles = raw.map((t) => ({ i: t.i }));
@@ -181,6 +187,8 @@ function buildMergePanel(node) {
     paintGrid();
     scheduleStitch();
     paintFocus();
+    persist(node, { key, cache_dir: one(msg.cache_dir, state.cacheDir),
+                    tiles: state.tiles.map((t) => ({ i: t.i })) });
     refit(node);
   };
 
