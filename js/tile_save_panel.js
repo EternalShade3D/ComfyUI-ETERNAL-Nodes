@@ -44,20 +44,9 @@ function buildSavePanel(node) {
     if (ph) ph.style.display = "none";
     body.style.display = "block";
     while (body.firstChild) body.removeChild(body.firstChild);
-    const grid = mk("div", "grid");
-    const dir = dirOf(cacheDir, key, "");
-    tiles.forEach((t) => {
-      const cell = mk("div", "cell cached");
-      const box = mk("div", "box");
-      const img = mk("img");
-      setTileImg(img, null, dir, t.i);
-      box.append(img);
-      const tag = mk("div", "tag");
-      tag.append(mk("span", null, "T" + t.i), mk("span", null, "saved"));
-      cell.append(box, tag);
-      grid.appendChild(cell);
-    });
-    body.appendChild(grid);
+    // no thumbnails here: the MERGE panel already shows the tiles. This panel only
+    // reports which tiles landed, so it adds no duplicate visuals.
+    body.append(mk("div", null, tiles.length + " tiles saved"));
     if (msg.report?.[0]) rep.textContent = msg.report[0];
     persist(node, { key, cache_dir: cacheDir, tiles: tiles.map((t) => ({ i: t.i })),
                     report: [msg.report?.[0] || ""] });

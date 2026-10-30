@@ -84,6 +84,7 @@ const CSS = `
 
 const ETP_TOP = 30;
 const ETP_SOCKET_COL = 150;
+const ETP_BAND = 14;   // strip below the panel reserved for the corner drag
 
 function ensureCss() {
   if (document.getElementById("etp-css")) return;
@@ -176,17 +177,18 @@ function fitPanel(node) {
   const apply = () => {
     const CAP = 2400;      // content grows to its natural height; past the cap the panel SCROLLS - it is never cut
     const natural = Math.ceil(root.scrollHeight) + 10;
-    const content = Math.min(Math.max(natural, 160), CAP);
+    const tracked = node._etPanelH || 0;      // height the user gave the node; tracked in onResize, never read back here
+    const content = tracked ? Math.min(tracked, CAP) : Math.min(Math.max(natural, 160), CAP);
 
-    root.style.overflowY = natural > CAP ? "auto" : "hidden";  // nothing is cut: the cap gets a scrollbar
+    root.style.overflowY = natural > content ? "auto" : "hidden";  // a smaller user box scrolls, it is never clipped
     root.style.overflowX = "hidden";
     root.style.height = "auto";
 
     w.computeSize = (width) => [width || node.size[0], content];
     el.style.height = content + "px";
-    el.style.minHeight = content + "px";
+    el.style.minHeight = "0";   // the old minHeight = content was the ratchet that snapped every drag back
 
-    const want = content + 8;
+    const want = content + 8 + ETP_BAND;   // the band below the panel is the strip the corner drag lives in
     if (!node._etManual && Math.abs(node.size[1] - want) > 2) {
       node._etSelfResize = true;
       node.setSize([node.size[0], want]);
@@ -482,8 +484,10 @@ function registerPanel(nodeName, widgetType, builder) {
         const r = resized?.apply(this, arguments);
         if (!this._etRoot) return r;
         if (!this._etSelfResize && !this._etLoading) {
-          // a real drag: stop auto-fitting for good and just follow the box
+          // a real drag: stop auto-fitting for good, remember the height the user chose,
+          // and let computeSize answer with THAT - not with the content height
           this._etManual = true;
+          this._etPanelH = Math.max(60, this.size[1] - (this._etTop || ETP_TOP) - 8 - ETP_BAND);
         }
         syncPanelBox(this);
         if (this._etLayout) this._etLayout();
