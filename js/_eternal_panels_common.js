@@ -184,7 +184,7 @@ function fitPanel(node) {
     root.style.overflowX = "hidden";
     root.style.height = "auto";
 
-    w.computeSize = (width) => [width || node.size[0], content];
+    w.computeSize = (width) => [width || node.size[0], node._etPanelH ? Math.min(node._etPanelH, CAP) : content];
     el.style.height = content + "px";
     el.style.minHeight = "0";   // the old minHeight = content was the ratchet that snapped every drag back
 
@@ -493,6 +493,18 @@ function registerPanel(nodeName, widgetType, builder) {
         }
         syncPanelBox(this);
         if (this._etLayout) this._etLayout();
+        return r;
+      };
+
+      const origSetSize = nodeType.prototype.setSize;
+      nodeType.prototype.setSize = function (size) {
+        const r = origSetSize?.apply(this, arguments);
+        // An explicit setSize is a chosen height too - without this the first
+        // programmatic resize snapped back to computeSize's content height.
+        if (this._etRoot && size && size[1] > 0 && !this._etSelfResize && !this._etLoading) {
+          this._etManual = true;
+          this._etPanelH = Math.max(60, size[1] - (this._etTop || ETP_TOP) - 8 - ETP_BAND);
+        }
         return r;
       };
 
