@@ -209,6 +209,7 @@ function fitPanel(node) {
       // that is inherent to DOM widgets in litegraph.
       w.computeSize = () => {
         const h = Math.min(Math.max((root.scrollHeight || 0) + 10, 160), CAP);  // live, re-read every draw
+        root.style.boxSizing = "border-box";   // style height must EQUAL the rendered rect - padding was the 31px spill seen live 2026-10-31
         root.style.height = h + "px"; el.style.height = h + "px";              // reserved height == rendered height
         return [w.width || Math.max(240, node.size[0] - (node._etSocketCol || ETP_SOCKET_COL) - 16), h];
       };
