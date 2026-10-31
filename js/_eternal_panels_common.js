@@ -203,12 +203,14 @@ function fitPanel(node) {
     root.style.overflowY = natural > content ? "auto" : "hidden";  // a smaller user box scrolls, it is never clipped
     root.style.overflowX = "hidden";
     if (!isVueNodes()) {
-      // Legacy renderer: a custom computeSize here would be read as a FIXED height - the node
-      // refuses to shrink and content spills past the frame. Report fill (-4) with a small
-      // layout minimum instead; the panel box takes the node's height and scrolls.
-      w.computeSize = () => [w.width || Math.max(240, node.size[0] - (node._etSocketCol || ETP_SOCKET_COL) - 16), -4];
+      // Legacy litegraph sums widget heights for the node layout and does NOT honor -4 fill
+      // (live-proven 2026-10-31: the panel got 16px and landed below the frame). It must
+      // report its honest content height; legacy cannot shrink below content anyway -
+      // that is inherent to DOM widgets in litegraph.
+      w.computeSize = () => [w.width || Math.max(240, node.size[0] - (node._etSocketCol || ETP_SOCKET_COL) - 16), content];
       w.computeLayoutSize = () => ({ minHeight: 120, minWidth: 1 });
-      root.style.height = "100%";
+      root.style.height = content + "px";
+      el.style.height = content + "px";
     } else {
       root.style.height = "auto";
       w.computeSize = (width) => [width || node.size[0], node._etPanelH ? Math.min(node._etPanelH, CAP) : content];
@@ -217,7 +219,7 @@ function fitPanel(node) {
     el.style.minHeight = "0";   // the old minHeight = content was the ratchet that snapped every drag back
 
     const want = content + 8 + ETP_BAND;   // the band below the panel is the strip the corner drag lives in
-    if (!node._etManual && !isGraphLoading() && Math.abs(node.size[1] - want) > 2) {
+    if (isVueNodes() && !node._etManual && !isGraphLoading() && Math.abs(node.size[1] - want) > 2) {
       node._etSelfResize = true;
       node.setSize([node.size[0], want]);
       node._etSelfResize = false;
