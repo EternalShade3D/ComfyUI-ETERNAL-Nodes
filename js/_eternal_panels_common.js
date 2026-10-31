@@ -100,6 +100,26 @@ function mk(tag, cls, text) {
   if (text != null) e.textContent = text;
   return e;
 }
+// Renderer + load gates, mirroring the proven Pixaroma pattern
+// (js/shared/nodes2.mjs + graph_loading.mjs):
+//  * legacy LiteGraph reads a DOM fill widget's custom computeSize as a FIXED height;
+//  * in Nodes 2.0 the rendered size lives in the Vue layout store, so clamping during
+//    a load (workflow open / tab switch / Ctrl+Z) desyncs the two and the node jumps back.
+function isVueNodes() { return !!window.LiteGraph?.vueNodesMode; }
+let _etGraphLoading = false;
+if (app?.loadGraphData && !app._etLoadWrapped) {
+  app._etLoadWrapped = true;
+  const _etOrigLoad = app.loadGraphData;
+  app.loadGraphData = function (...a) {
+    _etGraphLoading = true;
+    let r;
+    try { r = _etOrigLoad.apply(app, a); }
+    finally { Promise.resolve(r).finally(() => setTimeout(() => { _etGraphLoading = false; }, 300)); }
+    return r;
+  };
+}
+function isGraphLoading() { return _etGraphLoading; }
+
 function widgetOf(n, name) { return n?.widgets?.find((w) => w.name === name) || null; }
 function hideWidget(n, name) {
   const w = widgetOf(n, name);
@@ -182,14 +202,22 @@ function fitPanel(node) {
 
     root.style.overflowY = natural > content ? "auto" : "hidden";  // a smaller user box scrolls, it is never clipped
     root.style.overflowX = "hidden";
-    root.style.height = "auto";
-
-    w.computeSize = (width) => [width || node.size[0], node._etPanelH ? Math.min(node._etPanelH, CAP) : content];
-    el.style.height = content + "px";
+    if (!isVueNodes()) {
+      // Legacy renderer: a custom computeSize here would be read as a FIXED height - the node
+      // refuses to shrink and content spills past the frame. Report fill (-4) with a small
+      // layout minimum instead; the panel box takes the node's height and scrolls.
+      w.computeSize = () => [w.width || Math.max(240, node.size[0] - (node._etSocketCol || ETP_SOCKET_COL) - 16), -4];
+      w.computeLayoutSize = () => ({ minHeight: 120, minWidth: 1 });
+      root.style.height = "100%";
+    } else {
+      root.style.height = "auto";
+      w.computeSize = (width) => [width || node.size[0], node._etPanelH ? Math.min(node._etPanelH, CAP) : content];
+      el.style.height = content + "px";
+    }
     el.style.minHeight = "0";   // the old minHeight = content was the ratchet that snapped every drag back
 
     const want = content + 8 + ETP_BAND;   // the band below the panel is the strip the corner drag lives in
-    if (!node._etManual && Math.abs(node.size[1] - want) > 2) {
+    if (!node._etManual && !isGraphLoading() && Math.abs(node.size[1] - want) > 2) {
       node._etSelfResize = true;
       node.setSize([node.size[0], want]);
       node._etSelfResize = false;
@@ -470,13 +498,27 @@ function registerPanel(nodeName, widgetType, builder) {
       nodeType.prototype.onNodeCreated = function () {
         const r = created?.apply(this, arguments);
         const panelEl = builder(this);
-        this.addDOMWidget("et_panel", widgetType, panelEl, {
+        const w = this.addDOMWidget("et_panel", widgetType, panelEl, {
           getValue: () => "", setValue: () => {}, serialize: false, hideOnZoom: false,
         });
+        if (w) {
+          // Pixaroma rule: BOTH flags (options.serialize + widget.serialize), and canvasOnly
+          // must be a LIVE getter - true in legacy (out of the Parameters tab), false in
+          // Nodes 2.0 (the Vue body renders it). Static true renders the widget nowhere there.
+          w.serialize = false;
+          try {
+            Object.defineProperty(w.options, "canvasOnly", {
+              configurable: true, enumerable: true,
+              get() { return !window.LiteGraph?.vueNodesMode; },
+            });
+          } catch (e) { w.options.canvasOnly = !window.LiteGraph?.vueNodesMode; }
+        }
         forwardWheel(panelEl);
         this._etManual = false;
-        if (this.size[0] < 320) this.size[0] = 320;   // first-created only
-        if (this.size[1] < 240) this.size[1] = 240;
+        if (!isGraphLoading()) {
+          if (this.size[0] < 320) this.size[0] = 320;   // first-created only
+          if (this.size[1] < 240) this.size[1] = 240;
+        }
         fitPanel(this);
         return r;
       };
