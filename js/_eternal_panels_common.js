@@ -207,10 +207,12 @@ function fitPanel(node) {
       // (live-proven 2026-10-31: the panel got 16px and landed below the frame). It must
       // report its honest content height; legacy cannot shrink below content anyway -
       // that is inherent to DOM widgets in litegraph.
-      w.computeSize = () => [w.width || Math.max(240, node.size[0] - (node._etSocketCol || ETP_SOCKET_COL) - 16), content];
+      w.computeSize = () => {
+        const h = Math.min(Math.max((root.scrollHeight || 0) + 10, 160), CAP);  // live, re-read every draw
+        root.style.height = h + "px"; el.style.height = h + "px";              // reserved height == rendered height
+        return [w.width || Math.max(240, node.size[0] - (node._etSocketCol || ETP_SOCKET_COL) - 16), h];
+      };
       w.computeLayoutSize = () => ({ minHeight: 120, minWidth: 1 });
-      root.style.height = content + "px";
-      el.style.height = content + "px";
     } else {
       root.style.height = "auto";
       w.computeSize = (width) => [width || node.size[0], node._etPanelH ? Math.min(node._etPanelH, CAP) : content];
