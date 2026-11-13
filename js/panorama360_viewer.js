@@ -272,6 +272,7 @@ function buildSoftwareViewer(container, vp, imageUrl, node) {
   let exposure = clamp(num("exposure", 1), 0.2, 3);
   let auto = Number(wget(node, "auto_rotate", 0)) || 0;
   let imagePixels = null;
+  let output = null;
   let imageWidth = 0;
   let imageHeight = 0;
   let alive = true;
@@ -334,7 +335,9 @@ function buildSoftwareViewer(container, vp, imageUrl, node) {
     const width = canvas.width;
     const height = canvas.height;
     if (!width || !height) return;
-    const output = ctx.createImageData(width, height);
+    if (!output || output.width !== width || output.height !== height) {
+      output = ctx.createImageData(width, height);
+    }
     const dst = output.data;
     const aspect = width / height;
     const tanHalf = Math.tan((fov * Math.PI) / 360);
