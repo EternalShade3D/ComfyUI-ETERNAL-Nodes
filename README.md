@@ -93,7 +93,7 @@ workflow or opening a browser tab.
 | **z_offset** | FLOAT | −99–99. Camera height on the vertical axis, as a % of the sphere radius. A translation, not a tilt. |
 
 ### Notes
-- **Needs internet once** to fetch three.js (~600 KB), browser-cached after.
+- **Works fully offline** — Three.js r128 is bundled in `js/vendor/three.min.js` and imported as a private module without polluting global Three.js state; a 2D software projector is used when WebGL is unavailable. No CDN is required.
 - The image **passes through** to `image` output, so the viewer can sit in the
   middle of a graph instead of ending it.
 - Search aliases: `360`, `panorama`, `equirectangular`, `sphere`, `vr`.
@@ -143,7 +143,6 @@ at the point of confusion:
 | `(old) TILES → VL` | **TILE PREPARE** (it has a `tile` output) |
 | `(old) PER-TILE PROMPT` | **PROMPT FOR TILE #N** |
 | `(old) VL PROMPTS → PANEL` | **TILE PROMPT PANEL** (wire `auto_prompts`) |
-| **Preview 3D Eternal** | core `Preview 3D (Advanced)` — dev cancelled, kept only so old workflows load |
 
 ## Install
 

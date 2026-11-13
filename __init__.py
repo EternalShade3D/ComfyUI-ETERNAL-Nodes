@@ -14,7 +14,7 @@ from .nodes.flat_shade import NODE_CLASS_MAPPINGS as _FLAT_MAP, NODE_DISPLAY_NAM
 from .nodes.mesh_bridge import NODE_CLASS_MAPPINGS as _BRIDGE_MAP, NODE_DISPLAY_NAME_MAPPINGS as _BRIDGE_NAMES
 from .nodes.trimesh_to_file3d import NODE_CLASS_MAPPINGS as _F3D_MAP, NODE_DISPLAY_NAME_MAPPINGS as _F3D_NAMES
 from .nodes.aspect_ratio_size_picker import NODE_CLASS_MAPPINGS as _AR_MAP, NODE_DISPLAY_NAME_MAPPINGS as _AR_NAMES
-from .nodes.preview3d import EternalPreview3D
+
 from .nodes.tile_grid import NODE_CLASS_MAPPINGS as _TILE_GRID_MAP, NODE_DISPLAY_NAME_MAPPINGS as _TILE_GRID_NAMES
 from .nodes.tile_split import NODE_CLASS_MAPPINGS as _TILE_SPLIT_MAP, NODE_DISPLAY_NAME_MAPPINGS as _TILE_SPLIT_NAMES
 from .nodes.tile_stitch import NODE_CLASS_MAPPINGS as _TILE_STITCH_MAP, NODE_DISPLAY_NAME_MAPPINGS as _TILE_STITCH_NAMES
@@ -42,7 +42,6 @@ NODE_CLASS_MAPPINGS = {
     **_PREP_MAP,
     **_PLINE_MAP,
     **_V360_MAP,
-    "EternalPreview3D": EternalPreview3D,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     **NODE_DISPLAY_NAME_MAPPINGS,
@@ -71,7 +70,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "TileUnbatchEternal": "(old) TILES -> VL - TILE PREPARE has a tile output",
     "PromptByIndexEternal": "(old) PER-TILE PROMPT - use PROMPT FOR TILE #N",
     "PromptListJoinEternal": "(old) VL PROMPTS -> PANEL - wire auto_prompts",
-    "EternalPreview3D": "Preview 3D Eternal",
 }
 
 WEB_DIRECTORY = "./js"
