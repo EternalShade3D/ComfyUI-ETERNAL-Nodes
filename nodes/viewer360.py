@@ -37,9 +37,10 @@ class EternalViewer360(IO.ComfyNode):
             display_name="Panorama 360 Viewer Eternal",
             category="⚡ ETERNAL ● ↩ /🌐 360",
             description=(
-                "Shows an equirectangular (360) image as a WebGL sphere inside the node: "
-                "drag to look around, scroll to zoom, optional auto-rotation. Use it to "
-                "inspect seams, poles and distortion of a 2:1 panorama.\n\n"
+                "Shows an equirectangular (360) image as an interactive view inside the node: "
+                "drag to look around, scroll to zoom, optional auto-rotation. Uses a WebGL "
+                "sphere when available and a 2D software-rendered fallback when WebGL is "
+                "disabled. Use it to inspect seams, poles and distortion of a 2:1 panorama.\n\n"
                 "fov is the zoom the viewer opens at, in degrees: bigger = wider = the "
                 "panorama looks further away. 100 is the usual viewer default, 75 looks "
                 "zoomed in. The wheel changes it live and the value is written back here, "
@@ -48,8 +49,8 @@ class EternalViewer360(IO.ComfyNode):
                 "and pitch), camera height on the vertical axis, exposure, zoom range, "
                 "wheel and drag speed, horizon guide, background, reset. Equirectangular images "
                 "only (2:1, the 'unwrapped' 360 layout).\n\n"
-                "The viewer needs internet the first time it loads three.js (~600 KB, "
-                "browser-cached afterwards)."
+                "The viewer works fully offline: three.js (r128) ships with the pack in "
+                "js/vendor/three.min.js, so no internet or CDN is needed."
             ),
             search_aliases=[
                 "360", "panorama", "equirectangular", "sphere", "vr", "pano viewer",

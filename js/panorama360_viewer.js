@@ -54,7 +54,6 @@ import {
   hideJsonWidget,
 } from "./shared/index.mjs";
 
-const THREE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
 const NODE_ID = "EternalViewer360";
 const WIDGET_NAME = "panorama360";
 
@@ -205,22 +204,43 @@ const ICON = {
 };
 
 // ── three.js ────────────────────────────────────────────────────────────────
+// Three.js r128 ships locally at js/vendor/three.min.js. ComfyUI auto-imports
+// every *.js file in WEB_DIRECTORY, so this vendor file is wrapped as an ESM
+// module with private exports; it never publishes window.THREE or the global
+// __THREE__ duplicate-instance marker. Runtime import reuses the same module.
+
+const THREE_LOCAL = new URL("./vendor/three.min.js", import.meta.url).href;
 
 let threePromise = null;
+// Our own pinned r128 reference. Other packs may own window.THREE; never replace
+// or depend on that global because newer Three.js builds changed color APIs.
+let THREE_REF = null;
+
+function canCreateWebGLContext() {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    if (!gl) return false;
+    // Release the probe immediately; the actual renderer creates its own context.
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 
 function loadThree() {
-  if (window.THREE) return Promise.resolve(window.THREE);
+  if (THREE_REF) return Promise.resolve(THREE_REF);
   if (!threePromise) {
-    threePromise = new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = THREE_CDN;
-      s.onload = () => resolve(window.THREE);
-      s.onerror = () => {
+    threePromise = import(THREE_LOCAL)
+      .then((mod) => (THREE_REF = mod.default || mod))
+      .catch((localErr) => {
         threePromise = null;
-        reject(new Error("three.js unreachable"));
-      };
-      document.head.appendChild(s);
-    });
+        const err = new Error("bundled three.js could not be loaded from js/vendor/three.min.js");
+        err.code = "three-unavailable";
+        err.cause = localErr;
+        throw err;
+      });
   }
   return threePromise;
 }
@@ -233,15 +253,294 @@ function placeholder(container, html, bad) {
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+// Chrome can have WebGL disabled even though the rest of ComfyUI works (for
+// example, a GPU process launched with ANGLE disabled). Keep the node useful in
+// that browser: project the equirectangular pixels in a 2D canvas instead.
+// This is deliberately a fallback; WebGL remains the fast/high-quality path.
+function buildSoftwareViewer(container, vp, imageUrl, node) {
+  container._dispose360?.();
+  for (const old of vp.querySelectorAll(".p360-chip, .p360-msg, canvas")) old.remove();
+
+  const conf = cfg();
+  const num = (name, def) => {
+    const value = Number(wget(node, name, def));
+    return Number.isFinite(value) ? value : def;
+  };
+  let fov = clamp(num("fov", 100), conf.minFov, conf.maxFov);
+  let lon = clamp(num("start_yaw", 180), 0, 360);
+  let lat = clamp(num("start_pitch", 0), -90, 90);
+  let exposure = clamp(num("exposure", 1), 0.2, 3);
+  let auto = Number(wget(node, "auto_rotate", 0)) || 0;
+  let imagePixels = null;
+  let imageWidth = 0;
+  let imageHeight = 0;
+  let alive = true;
+  let dirty = true;
+  let raf = 0;
+  let lastFrame = 0;
+  let lastT = performance.now();
+  let dragging = false;
+  let pointerId = null;
+  let ox = 0;
+  let oy = 0;
+  let saveTimer = null;
+
+  const canvas = document.createElement("canvas");
+  canvas.className = "p360-software-canvas";
+  canvas.style.cssText = "position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:grab;";
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) {
+    const error = new Error("This browser cannot create a 2D canvas either.");
+    error.code = "canvas2d-unavailable";
+    throw error;
+  }
+  vp.appendChild(canvas);
+
+  const chip = document.createElement("div");
+  chip.className = "p360-chip";
+  vp.appendChild(chip);
+  const markDirty = () => {
+    dirty = true;
+    if (!raf && alive) raf = requestAnimationFrame(frameLoop);
+  };
+  const paintReadout = () => {
+    const aspect = canvas.height ? canvas.width / canvas.height : 1;
+    const horizontalFov = 2 * Math.atan(Math.tan((fov * Math.PI) / 360) * aspect) * (180 / Math.PI);
+    chip.textContent = "2D fallback · fov " + fov.toFixed(0) + "° (" + horizontalFov.toFixed(0) + "° wide)" +
+      (auto !== 0 ? " · auto " + (auto > 0 ? "+" : "") + auto + "°/s" : "");
+    container._face?.sync?.();
+  };
+  const paintBackground = () => {
+    const name = String(wget(node, "background", "dark") || "dark");
+    vp.style.background = BG_HEX[name] || BG_HEX.dark;
+  };
+  const resize = () => {
+    const width = vp.clientWidth || container.clientWidth || 400;
+    const height = vp.clientHeight || container.clientHeight || 300;
+    if (width < 10 || height < 10) return;
+    // Bound the software work per frame while keeping the canvas fluid with the node.
+    const scale = Math.min(1, 960 / width, 720 / height);
+    const targetWidth = Math.max(1, Math.round(width * scale));
+    const targetHeight = Math.max(1, Math.round(height * scale));
+    if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      paintReadout();
+      markDirty();
+    }
+  };
+  const render = () => {
+    if (!imagePixels || !alive) return;
+    const width = canvas.width;
+    const height = canvas.height;
+    if (!width || !height) return;
+    const output = ctx.createImageData(width, height);
+    const dst = output.data;
+    const aspect = width / height;
+    const tanHalf = Math.tan((fov * Math.PI) / 360);
+    const pitch = (lat * Math.PI) / 180;
+    const yaw = (lon * Math.PI) / 180;
+    const cp = Math.cos(pitch);
+    const sp = Math.sin(pitch);
+    const ct = Math.cos(yaw);
+    const st = Math.sin(yaw);
+    const fx = cp * ct, fy = sp, fz = cp * st;
+    const rx = -st, rz = ct;
+    const ux = -sp * ct, uy = cp, uz = -sp * st;
+    const radius = 500;
+    const centerY = (-clamp(num("z_offset", 0), -99, 99) / 100) * radius;
+
+    for (let y = 0; y < height; y++) {
+      const sy = (1 - (2 * (y + 0.5)) / height) * tanHalf;
+      for (let x = 0; x < width; x++) {
+        const sx = ((2 * (x + 0.5)) / width - 1) * aspect * tanHalf;
+        let dx = fx + sx * rx + sy * ux;
+        let dy = fy + sy * uy;
+        let dz = fz + sx * rz + sy * uz;
+        const rayLength = Math.hypot(dx, dy, dz);
+        dx /= rayLength; dy /= rayLength; dz /= rayLength;
+        const along = dy * centerY;
+        const hitDistance = along + Math.sqrt(Math.max(0, along * along + radius * radius - centerY * centerY));
+        dx = hitDistance * dx;
+        dy = hitDistance * dy - centerY;
+        dz = hitDistance * dz;
+        const hitLength = Math.hypot(dx, dy, dz);
+        const uAngle = Math.atan2(dz / hitLength, dx / hitLength) / (2 * Math.PI);
+        const u = uAngle < 0 ? uAngle + 1 : uAngle;
+        const v = Math.acos(clamp(dy / hitLength, -1, 1)) / Math.PI;
+        const sxImg = Math.min(imageWidth - 1, Math.floor(u * imageWidth));
+        const syImg = Math.min(imageHeight - 1, Math.floor(v * imageHeight));
+        const src = (syImg * imageWidth + sxImg) * 4;
+        const dstIndex = (y * width + x) * 4;
+        dst[dstIndex] = Math.min(255, imagePixels[src] * exposure);
+        dst[dstIndex + 1] = Math.min(255, imagePixels[src + 1] * exposure);
+        dst[dstIndex + 2] = Math.min(255, imagePixels[src + 2] * exposure);
+        dst[dstIndex + 3] = 255;
+      }
+    }
+    ctx.putImageData(output, 0, 0);
+    dirty = false;
+    lastFrame = performance.now();
+    paintReadout();
+  };
+  function frameLoop(now) {
+    raf = 0;
+    if (!alive) return;
+    const elapsed = Math.min((now - lastT) / 1000, 0.25);
+    lastT = now;
+    if (auto !== 0 && !dragging) {
+      lon = (lon + auto * elapsed + 360) % 360;
+      dirty = true;
+    }
+    if (dirty && now - lastFrame >= 33) render();
+    if (dirty || auto !== 0) raf = requestAnimationFrame(frameLoop);
+  }
+
+  const failImage = () => {
+    vp.dataset.p360error = imageUrl;
+    canvas.remove();
+    chip.remove();
+    placeholder(vp, "The preview image could not be loaded.<br>URL: " +
+      imageUrl.replace(/&/g, "&amp;").replace(/</g, "&lt;"), true);
+  };
+  const image = new Image();
+  image.decoding = "async";
+  image.onload = () => {
+    if (!alive) return;
+    try {
+      const source = document.createElement("canvas");
+      source.width = image.naturalWidth;
+      source.height = image.naturalHeight;
+      const sourceContext = source.getContext("2d", { willReadFrequently: true });
+      sourceContext.drawImage(image, 0, 0);
+      imagePixels = sourceContext.getImageData(0, 0, source.width, source.height).data;
+      imageWidth = source.width;
+      imageHeight = source.height;
+      delete vp.dataset.p360error;
+      resize();
+      markDirty();
+    } catch (error) {
+      console.error("[Panorama360] 2D panorama decode failed:", error);
+      failImage();
+    }
+  };
+  image.onerror = failImage;
+  image.src = imageUrl;
+  vp.dataset.p360url = imageUrl;
+  paintBackground();
+
+  canvas.addEventListener("pointerdown", (event) => {
+    dragging = true;
+    pointerId = event.pointerId;
+    ox = event.clientX;
+    oy = event.clientY;
+    try { canvas.setPointerCapture(pointerId); } catch (_) {}
+    canvas.style.cursor = "grabbing";
+    event.stopPropagation();
+  });
+  canvas.addEventListener("pointermove", (event) => {
+    if (!dragging || event.pointerId !== pointerId) return;
+    const settings = cfg();
+    lon -= (event.clientX - ox) * settings.drag;
+    lat = clamp(lat + (event.clientY - oy) * settings.drag * (settings.invertY ? -1 : 1), -85, 85);
+    ox = event.clientX;
+    oy = event.clientY;
+    markDirty();
+  });
+  const endDrag = (event) => {
+    if (pointerId !== null && event.pointerId !== pointerId) return;
+    dragging = false;
+    canvas.style.cursor = "grab";
+    try { if (pointerId !== null) canvas.releasePointerCapture(pointerId); } catch (_) {}
+    pointerId = null;
+  };
+  canvas.addEventListener("pointerup", endDrag);
+  canvas.addEventListener("pointercancel", endDrag);
+  canvas.addEventListener("wheel", (event) => {
+    const settings = cfg();
+    if (settings.canvasWheel && !event.shiftKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      app.canvas?.processMouseWheel?.(event);
+      return;
+    }
+    fov = clamp(fov + event.deltaY * settings.zoom, settings.minFov, settings.maxFov);
+    paintReadout();
+    markDirty();
+    container._face?.sync?.();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => wset(node, "fov", Math.round(fov)), 500);
+    event.stopPropagation();
+    event.preventDefault();
+  }, { passive: false });
+
+  const fullscreenChanged = () => {
+    requestAnimationFrame(resize);
+    setTimeout(resize, 150);
+    setTimeout(resize, 400);
+  };
+  document.addEventListener("fullscreenchange", fullscreenChanged);
+  container._resize360 = resize;
+  container._dispose360 = () => {
+    alive = false;
+    clearTimeout(saveTimer);
+    if (raf) cancelAnimationFrame(raf);
+    document.removeEventListener("fullscreenchange", fullscreenChanged);
+    container._resize360 = null;
+    container._dispose360 = null;
+    container._v360 = null;
+    image.onload = null;
+    image.onerror = null;
+    image.src = "";
+    canvas.remove();
+    chip.remove();
+  };
+  const applyView = () => {
+    lon = clamp(num("start_yaw", 180), 0, 360);
+    lat = clamp(num("start_pitch", 0), -90, 90);
+    markDirty();
+  };
+  const applyHeight = () => markDirty();
+  const reset = () => {
+    fov = clamp(num("fov", 100), conf.minFov, conf.maxFov);
+    applyView();
+    exposure = clamp(num("exposure", 1), 0.2, 3);
+    paintReadout();
+    markDirty();
+  };
+  container._v360 = {
+    revision: () => "2D software",
+    getFov: () => fov,
+    setFov: (value) => { fov = clamp(Number(value) || 100, cfg().minFov, cfg().maxFov); paintReadout(); markDirty(); },
+    reset,
+    repaint: () => { resize(); markDirty(); },
+    refresh: () => {
+      auto = Number(wget(node, "auto_rotate", 0)) || 0;
+      exposure = clamp(num("exposure", 1), 0.2, 3);
+      paintBackground();
+      paintReadout();
+      markDirty();
+    },
+    applyView,
+    applyHeight,
+    applyPov: () => { applyView(); applyHeight(); },
+  };
+  resize();
+  paintReadout();
+}
+
 // ── the viewer ──────────────────────────────────────────────────────────────
 
-function buildViewer(container, vp, imageUrl, node) {
+function buildViewer(container, vp, imageUrl, node, THREE) {
   container._dispose360?.();
   // Only the sphere and its chip live inside the viewport; the control band above it
   // is built once by buildFace and survives every re-queue.
   for (const old of vp.querySelectorAll(".p360-chip")) old.remove();
+  // The "Queue the node to load the 360 view" hint must go once the sphere is up,
+  // otherwise it keeps floating over the render.
+  for (const old of vp.querySelectorAll(".p360-msg")) old.remove();
 
-  const THREE = window.THREE;
+  THREE = THREE || THREE_REF;
   const conf = cfg();
   const w = vp.clientWidth || 400;
   const h = vp.clientHeight || 300;
@@ -262,7 +561,16 @@ function buildViewer(container, vp, imageUrl, node) {
     0.1,
     1000
   );
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+  } catch (error) {
+    // WebGL is disabled in this Chrome profile (ANGLE=disabled); use the 2D
+    // software projector so the workflow image still appears in the node.
+    console.warn("[Panorama360] WebGL unavailable; using the 2D software viewer.", error);
+    buildSoftwareViewer(container, vp, imageUrl, node);
+    return;
+  }
   renderer.setPixelRatio(canvasBackingScale(w, h));
   renderer.setSize(w, h);
   renderer.domElement.style.cssText =
@@ -534,6 +842,9 @@ function buildViewer(container, vp, imageUrl, node) {
 
   // Live control surface for the settings panel.
   container._v360 = {
+    // Which three.js this viewer actually rendered with (r128 = the vendored
+    // build). Another pack owning window.THREE must never change this.
+    revision: () => THREE.REVISION,
     getFov: () => camera.fov,
     setFov: (v) => {
       const c = cfg();
@@ -1597,16 +1908,25 @@ function clampNodeSize(node) {
   if (node.size[1] < NODE_MIN_H) node.size[1] = NODE_MIN_H;
 }
 
-// ComfyUI's Nodes 2.0 node body renders an inline preview of a node's IMAGE output,
-// which put a flat equirectangular copy of the panorama under the sphere. This node
-// draws that image itself, in 3D, so the flat copy is redundant: hide it. Selector
-// driven and a no-op when it finds nothing (legacy renderer, or before a first run).
+// In Nodes 2.0, IMAGE outputs live in a flex slot after the node's widgets. The
+// inner `.image-preview` can be hidden while its parent slot still consumes a
+// full row (and shows the 2048×1024 placeholder). Hide that entire output slot so
+// the panorama widget receives the node's available height. Older layouts fall
+// back to hiding the image preview wrapper itself.
 function hideInlinePreview(node) {
   if (!node?.id) return;
   const root = document.querySelector('[data-node-id="' + node.id + '"]');
   if (!root) return;
+
+  const imageContent = root.querySelector(".lg-node-content");
+  const outputSlot = imageContent?.parentElement;
+  if (outputSlot && outputSlot !== root && root.contains(outputSlot)) {
+    outputSlot.style.display = "none";
+    return;
+  }
+
   for (const img of root.querySelectorAll('img[src*="/view?"]')) {
-    const box = img.closest("div");
+    const box = img.closest(".image-preview") || img.closest("div");
     if (box && box !== root) box.style.display = "none";
   }
 }
@@ -1761,22 +2081,57 @@ app.registerExtension({
       // wipe the control band that buildFace() drew.
       const vp = container._face?.vp || container;
 
+      const finishViewer = () => {
+        hideInlinePreview(this);
+        requestAnimationFrame(() => hideInlinePreview(this));
+        setTimeout(() => hideInlinePreview(this), 400);
+        setTimeout(() => hideInlinePreview(this), 1500);
+      };
+      const reportViewerError = (err) => {
+        placeholder(
+          vp,
+          (err?.code === "canvas2d-unavailable"
+            ? "This browser cannot create a 2D canvas for the fallback viewer.<br>"
+            : "The 360 viewer failed to start.<br>") +
+            String(err?.message || err).replace(/&/g, "&amp;").replace(/</g, "&lt;"),
+          true
+        );
+        console.error("[Panorama360] viewer start failed:", err);
+      };
+      const startSoftwareViewer = () => {
+        try {
+          buildSoftwareViewer(container, vp, url, this);
+          finishViewer();
+        } catch (err) {
+          reportViewerError(err);
+        }
+      };
+
+      // Don't even load our vendored Three.js when this browser has WebGL disabled.
+      // That also avoids a duplicate-Three warning from this node in 2D-only Chrome.
+      if (!canCreateWebGLContext()) {
+        console.info("[Panorama360] WebGL unavailable; using the 2D software viewer.");
+        startSoftwareViewer();
+        return;
+      }
+
       loadThree()
-        .then(() => {
-          buildViewer(container, vp, url, this);
-          // Nodes 2.0 spawns its own flat preview of the IMAGE output; hide it once the
-          // 3D view is up, and again shortly after because it appears asynchronously.
-          hideInlinePreview(this);
-          requestAnimationFrame(() => hideInlinePreview(this));
-          setTimeout(() => hideInlinePreview(this), 400);
-          setTimeout(() => hideInlinePreview(this), 1500);
+        .then((THREE) => {
+          try {
+            buildViewer(container, vp, url, this, THREE);
+          } catch (err) {
+            reportViewerError(err);
+            return;
+          }
+          finishViewer();
         })
-        .catch(() => {
+        .catch((err) => {
           placeholder(
             vp,
-            "three.js could not be loaded from the CDN.<br>The viewer needs internet access on first use.",
+            "The bundled three.js module could not be loaded.<br>Check that js/vendor/three.min.js is present.",
             true
           );
+          console.error("[Panorama360] three.js unavailable:", err);
         });
     };
   },
