@@ -170,14 +170,13 @@
 }
 
 /* ---- Announcement ticker (mobile only) ---- */
-.anno-track{display:flex;white-space:nowrap;will-change:transform}
-.anno-item{padding-right:3rem}
+.anno-track{display:flex;white-space:nowrap;width:max-content;will-change:transform}
+.anno-item{flex:0 0 auto;padding-right:4rem}
 .anno-dup{display:none}
 @media (max-width:639px){
   .anno-dup{display:inline-block}
   .anno-track{animation:anno-marquee 22s linear infinite}
   .anno-track:hover{animation-play-state:paused}
-  #announcement-bar .anno-text{white-space:nowrap;overflow:hidden;text-overflow:clip;min-width:0}
 }
 @keyframes anno-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 @media (prefers-reduced-motion:reduce){.anno-track{animation:none!important}}
