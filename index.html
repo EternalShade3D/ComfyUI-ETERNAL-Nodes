@@ -24,6 +24,12 @@
     <link rel="stylesheet" href="assets/style.css"/>
 
     <style>
+        /* Tailwind utilities used by the action-button row that the local style.css copy lacks */
+        .flex-1 { flex: 1 1 0%; }
+        .box-border { box-sizing: border-box; }
+        .border-transparent { border-color: transparent; }
+        .w-3\.5 { width: 14px; }
+        .h-3\.5 { height: 14px; }
         /* Ambient grid background */
         body {
             background-color: #0a0a0f;
@@ -268,16 +274,16 @@
                 </p>
 
                 <!-- Action Buttons -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 items-center gap-4 mb-14">
-                    <a href="https://registry.comfy.org/publishers/eternal/nodes/eternal-nodes" target="_blank" rel="noopener" class="w-full inline-flex items-center justify-center gap-2 bg-brand-accent hover:bg-brand-accentHover text-black font-medium text-sm px-6 py-3 rounded-md shadow-[0_0_16px_rgba(124,92,252,0.25)] transition-all transform hover:-translate-y-0.5">
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
+                    <a href="https://registry.comfy.org/publishers/eternal/nodes/eternal-nodes" target="_blank" rel="noopener" class="w-full flex-1 border border-transparent box-border inline-flex items-center justify-center gap-2 bg-brand-accent hover:bg-brand-accentHover text-black font-medium text-sm px-6 py-3 rounded-md shadow-[0_0_16px_rgba(124,92,252,0.25)] transition-all transform hover:-translate-y-0.5">
                         <svg class="w-3.5 h-3.5 rounded-[3px]" viewBox="0 0 48 48" aria-hidden="true"><path d="M31.0126 30.4797C31.0576 30.3275 31.0822 30.1671 31.0822 29.9985C31.0822 29.0649 30.3294 28.3081 29.4006 28.3081H21.8643C21.4593 28.3122 21.1279 27.9832 21.1279 27.576C21.1279 27.5019 21.1401 27.432 21.1565 27.3662L23.1858 20.259C23.2717 19.9465 23.5581 19.7161 23.8936 19.7161L31.4586 19.7079C33.0542 19.7079 34.4003 18.6262 34.8053 17.1497L35.9427 13.1889C35.9795 13.0491 36 12.8969 36 12.7447C36 11.8152 35.2513 11.0625 34.3266 11.0625H25.1742C23.5868 11.0625 22.2448 12.136 21.8316 13.5961L21.0624 16.2983C20.9724 16.6068 20.6901 16.833 20.3546 16.833H18.1575C16.5823 16.833 15.2526 17.8859 14.8271 19.3295L12.0614 29.0402C12.0205 29.1841 12 29.3404 12 29.4967C12 30.4304 12.7528 31.1871 13.6816 31.1871H15.8418C16.2468 31.1871 16.5782 31.5162 16.5782 31.9275C16.5782 31.9974 16.5701 32.0673 16.5496 32.1331L15.7845 34.8107C15.7477 34.9546 15.7232 35.1027 15.7232 35.2549C15.7232 36.1844 16.4719 36.937 17.3965 36.937L26.553 36.9288C28.1446 36.9288 29.4865 35.8512 29.8957 34.3829L31.0085 30.4838L31.0126 30.4797Z" fill="#F2FF59"/></svg>
                         <span>Get on Comfy Registry</span>
                     </a>
-                    <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes" target="_blank" rel="noopener" class="w-full inline-flex items-center justify-center gap-2 bg-brand-surface text-brand-text hover:bg-brand-surface/80 border border-brand-borderMedium hover:border-brand-muted font-medium text-sm px-6 py-3 rounded-md transition-all">
+                    <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes" target="_blank" rel="noopener" class="w-full flex-1 box-border inline-flex items-center justify-center gap-2 bg-brand-surface text-brand-text hover:bg-brand-surface/80 border border-brand-borderMedium hover:border-brand-muted font-medium text-sm px-6 py-3 rounded-md transition-all">
                         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
                         <span>GitHub Repository</span>
                     </a>
-                    <a href="#docs" class="w-full inline-flex items-center justify-center gap-2 bg-brand-surface text-brand-text hover:bg-brand-surface/80 border border-brand-borderMedium hover:border-brand-muted font-medium text-sm px-6 py-3 rounded-md transition-all">
+                    <a href="#docs" class="w-full flex-1 box-border inline-flex items-center justify-center gap-2 bg-brand-surface text-brand-text hover:bg-brand-surface/80 border border-brand-borderMedium hover:border-brand-muted font-medium text-sm px-6 py-3 rounded-md transition-all">
                         <span>📖 Read Documentation</span>
                     </a>
                 </div>
