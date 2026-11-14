@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Panorama 360 Viewer Eternal ◈ | ComfyUI-ETERNAL-Nodes</title>
+    <meta name="description" content="ComfyUI custom node by EternalShade3D: inspect 360° equirectangular panoramas as a live interactive sphere inside the node. Drag, zoom with FOV write-back, gear Settings panel, fullscreen glass bar, and offline Three.js."/>
+    <meta name="keywords" content="ComfyUI custom node, 360 viewer, equirectangular panorama, ComfyUI-ETERNAL-Nodes, EternalShade3D, WebGL sphere, Three.js offline, Comfy Registry"/>
+    <meta name="author" content="EternalShade3D"/>
+    <meta name="robots" content="index, follow"/>
+
+    <!-- Favicon (brand E mark, filled #7149FF) -->
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"/>
+
+    <!-- Open Graph -->
+    <meta property="og:site_name" content="ComfyUI-ETERNAL-Nodes"/>
+    <meta property="og:title" content="Panorama 360 Viewer Eternal ◈ — Live 360° Node for ComfyUI"/>
+    <meta property="og:description" content="Inspect a 360° equirectangular panorama without leaving your workflow: live WebGL sphere inside the node, FOV writes back, works fully offline."/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:image" content="assets/shot_canvas_controls.jpg"/>
+
+    <!-- Local styles (copied from EternalShade3D-Toolbox — no CDN) -->
+    <link rel="stylesheet" href="assets/fonts.css"/>
+    <link rel="stylesheet" href="assets/style.css"/>
+
+    <style>
+        /* Ambient grid background */
+        body {
+            background-color: #0a0a0f;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(circle at 50% 0%, rgba(124, 92, 252, 0.12) 0%, transparent 70%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0f; }
+        ::-webkit-scrollbar-thumb { background: #202032; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2a2a45; }
+
+        .glow-card-hover {
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glow-card-hover:hover {
+            transform: translateY(-4px);
+        }
+
+        /* Technical specifications & controls tables */
+        #docs .spec-table table { border-collapse: collapse; }
+        #docs .spec-table tbody, #docs .spec-table tr, #docs .spec-table th, #docs .spec-table td { display: block; width: 100%; }
+        #docs .spec-table tr { border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+        #docs .spec-table tr:last-child { border-bottom: none; }
+        #docs .spec-table th {
+            padding: 0.875rem 1rem 0.15rem;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            text-align: left;
+            color: var(--brand-muted, #8b8ba7);
+        }
+        #docs .spec-table td { padding: 0 1rem 1rem; line-height: 1.55; text-align: left; }
+        @media (min-width: 640px) {
+            #docs .spec-table tbody { display: table-row-group; }
+            #docs .spec-table tr { display: table-row; }
+            #docs .spec-table th, #docs .spec-table td { display: table-cell; padding: 0.9rem 1rem; vertical-align: top; }
+            #docs .spec-table th {
+                width: 30%;
+                font-size: 0.875rem;
+                letter-spacing: normal;
+                text-transform: none;
+                font-weight: 600;
+                color: #f0f0f5;
+                font-family: ui-monospace, "JetBrains Mono", monospace;
+            }
+        }
+
+        /* Mobile menu */
+        .menu-btn{
+            display:flex;align-items:center;justify-content:center;
+            width:2rem;height:2rem;background:transparent;border:none;color:var(--brand-muted);cursor:pointer;
+        }
+        .menu-btn[aria-expanded="true"]{color:var(--brand-heading);}
+        .menu-bar{width:1.25rem;height:1px;background:currentColor;position:relative;}
+        .menu-bar::before,.menu-bar::after{content:'';position:absolute;left:0;width:1.25rem;height:1px;background:currentColor;}
+        .menu-bar::before{top:-6px;} .menu-bar::after{top:6px;}
+
+        #mobile-menu{
+            position:fixed;top:0;left:0;right:0;bottom:0;z-index:60;
+            background:#0a0a0f;border-bottom:1px solid var(--brand-border);
+            padding:1rem;display:flex;flex-direction:column;gap:0.5rem;
+            transform:translateX(100%);transition:transform 0.3s ease;opacity:1;
+        }
+        #mobile-menu.open{transform:translateX(0);}
+        #mobile-menu a{display:none;}
+        #mobile-menu .menu-item{
+            display:block;padding:0.85rem 1rem;font-size:0.9rem;font-weight:500;
+            color:#8b8ba7;text-decoration:none;border-radius:var(--radius-md);
+            transition:all 0.2s;position:relative;
+        }
+        #mobile-menu .menu-item:hover{color:#ffffff;background:#1a1a2b;}
+        #mobile-menu .menu-item.btn-accent{color:#000;background:#7c5cfc;font-weight:600;}
+
+        .menu-header{padding:0 0 1rem 0;border-bottom:1px solid #2a2a45;margin-bottom:1.5rem;}
+        .menu-section-label{font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#545470;margin-bottom:0.75rem;padding-left:0.25rem;}
+        .menu-footer{font-size:0.7rem;color:#545470;text-align:center;padding-top:1rem;border-top:1px solid #2a2a45;}
+
+        .menu-close{
+            position:absolute;top:1rem;right:1rem;z-index:70;
+            background:transparent;border:none;color:#8b8ba7;
+            cursor:pointer;width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;
+        }
+        .menu-close:hover{color:#ffffff;}
+        .skip-link{
+            position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;
+        }
+
+        /* Zoom Modal Gallery */
+        .cursor-zoom-in{cursor:zoom-in}
+        .zoom-modal{position:fixed;inset:0;z-index:100;background:rgba(10,10,15,0.94);backdrop-filter:blur(8px);display:none;animation:zoomFadeIn .25s ease}
+        .zoom-modal.open{display:flex}
+        .zoom-stage{position:relative;flex:1 1 auto;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:2rem}
+        .zoom-modal .zoom-backdrop{position:absolute;inset:0;cursor:zoom-out}
+        .zoom-content{position:relative;z-index:10;max-width:98vw;max-height:96vh;display:flex;flex-direction:column;align-items:center;gap:0.5rem}
+        .zoom-content img{max-width:98vw;max-height:82vh;width:auto;height:auto;border-radius:1rem;border:1px solid var(--brand-border);box-shadow:0 20px 80px rgba(0,0,0,0.8);cursor:zoom-in;object-fit:contain}
+        .zoom-btn-close{position:absolute;top:1rem;right:1rem;z-index:20;width:2.75rem;height:2.75rem;border-radius:50%;background:rgba(0,0,0,0.65);border:1px solid var(--brand-borderMedium);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.5rem;line-height:1}
+        .zoom-btn-close:hover{background:rgba(0,0,0,0.9)}
+        #zoom-prev,#zoom-next{position:absolute;top:50%;transform:translateY(-50%);z-index:15;width:2.75rem;height:2.75rem;border-radius:50%;background:rgba(0,0,0,0.65);border:1px solid var(--brand-borderMedium);color:#fff;font-size:1.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+        #zoom-prev{left:1rem}
+        #zoom-next{right:1rem}
+        #zoom-prev:hover,#zoom-next:hover{background:rgba(0,0,0,0.9)}
+        .zoom-caption{color:#8b8ba7;font-size:0.875rem;text-align:center;margin-top:0.25rem}
+        @media (max-width:639px){
+            .zoom-stage{padding:1rem 1rem 4.75rem}
+            #zoom-prev,#zoom-next{top:auto;bottom:1rem}
+            #zoom-prev{left:50%;transform:translateX(calc(-100% - 0.5rem))}
+            #zoom-next{right:50%;transform:translateX(calc(100% + 0.5rem))}
+            .zoom-content img{max-height:72vh}
+            .zoom-caption{margin-top:0}
+        }
+        @keyframes zoomFadeIn{from{opacity:0}to{opacity:1}}
+    </style>
+</head>
+
+<body class="text-brand-text font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Skip to content -->
+    <a href="#main" class="skip-link">Skip to content</a>
+
+    <!-- ==========================================
+         ANNOUNCEMENT BAR
+         ========================================== -->
+    <div id="announcement-bar" class="bg-gradient-to-r from-brand-accent/30 via-brand-accent/40 to-brand-accent/30 border-b border-brand-accentBorder text-xs sm:text-sm text-brand-heading py-2 px-4 transition-all duration-300">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
+                <span class="inline-block bg-brand-accent text-black text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">Comfy Registry</span>
+                <span class="font-medium text-brand-heading">v1.1.3 — Panorama 360 Viewer Eternal: live sphere inside the node, FOV write-back, gear panel &amp; offline Three.js</span>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+                <a href="#install" class="text-brand-accentLight hover:underline font-medium text-xs">Install now &rarr;</a>
+                <button onclick="document.getElementById('announcement-bar').style.display='none'" class="text-brand-muted hover:text-brand-heading transition-colors" aria-label="Dismiss Announcement">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         HEADER / NAVIGATION
+         ========================================== -->
+    <header class="sticky top-0 z-50 bg-[#0a0a0f]/85 backdrop-blur-md border-b border-brand-border">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <a href="#" class="flex items-center gap-2 text-brand-heading font-bold text-lg tracking-tight hover:opacity-90 transition-opacity whitespace-nowrap">
+                <img src="assets/favicon.svg" alt="" class="mark" width="32" height="32"/>
+                <span>Eternal<span class="text-brand-accent font-normal">Shade3D</span></span>
+            </a>
+
+            <!-- Desktop Nav Links -->
+            <ul class="hidden lg:flex items-center gap-8 text-sm font-medium text-brand-muted whitespace-nowrap">
+                <li><a href="#features" class="hover:text-brand-heading transition-colors">Features</a></li>
+                <li><a href="#action" class="hover:text-brand-heading transition-colors">See It In Action</a></li>
+                <li><a href="#nodecapture" class="hover:text-brand-heading transition-colors">Node &amp; Captures</a></li>
+                <li><a href="#install" class="hover:text-brand-heading transition-colors">Install</a></li>
+                <li><a href="#docs" class="hover:text-brand-heading transition-colors">Documentation</a></li>
+            </ul>
+
+            <!-- Navigation Actions -->
+            <div class="flex items-center gap-3">
+                <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes" target="_blank" rel="noopener" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-muted hover:text-brand-heading border border-brand-borderMedium rounded-md hover:border-brand-borderHover transition-all">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    <span>GitHub</span>
+                </a>
+                <a href="https://registry.comfy.org/publishers/eternal/nodes/eternal-nodes" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 bg-brand-accent hover:bg-brand-accentHover text-black font-semibold text-xs px-4 py-2 rounded-md shadow-[0_0_16px_rgba(124,92,252,0.25)] transition-all transform hover:-translate-y-0.5">
+                    <svg class="w-3.5 h-3.5 rounded-[3px]" viewBox="0 0 48 48" aria-hidden="true"><path d="M31.0126 30.4797C31.0576 30.3275 31.0822 30.1671 31.0822 29.9985C31.0822 29.0649 30.3294 28.3081 29.4006 28.3081H21.8643C21.4593 28.3122 21.1279 27.9832 21.1279 27.576C21.1279 27.5019 21.1401 27.432 21.1565 27.3662L23.1858 20.259C23.2717 19.9465 23.5581 19.7161 23.8936 19.7161L31.4586 19.7079C33.0542 19.7079 34.4003 18.6262 34.8053 17.1497L35.9427 13.1889C35.9795 13.0491 36 12.8969 36 12.7447C36 11.8152 35.2513 11.0625 34.3266 11.0625H25.1742C23.5868 11.0625 22.2448 12.136 21.8316 13.5961L21.0624 16.2983C20.9724 16.6068 20.6901 16.833 20.3546 16.833H18.1575C16.5823 16.833 15.2526 17.8859 14.8271 19.3295L12.0614 29.0402C12.0205 29.1841 12 29.3404 12 29.4967C12 30.4304 12.7528 31.1871 13.6816 31.1871H15.8418C16.2468 31.1871 16.5782 31.5162 16.5782 31.9275C16.5782 31.9974 16.5701 32.0673 16.5496 32.1331L15.7845 34.8107C15.7477 34.9546 15.7232 35.1027 15.7232 35.2549C15.7232 36.1844 16.4719 36.937 17.3965 36.937L26.553 36.9288C28.1446 36.9288 29.4865 35.8512 29.8957 34.3829L31.0085 30.4838L31.0126 30.4797Z" fill="#F2FF59"/></svg>
+                    <span>Comfy Registry</span>
+                </a>
+                <!-- Mobile hamburger -->
+                <button class="menu-btn lg:hidden" aria-expanded="false" aria-controls="mobile-menu" aria-label="Menu" onclick="toggleMenu()">
+                    <span class="menu-bar"></span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Mobile menu panel -->
+    <div id="mobile-menu">
+        <div class="menu-header flex items-center justify-between pb-2 border-b border-brand-borderMedium mb-4">
+            <div class="flex items-center gap-2">
+                <img src="assets/favicon.svg" alt="" class="mark" width="32" height="32"/>
+                <span>Eternal<span class="text-brand-accent font-normal">Shade3D</span></span>
+            </div>
+            <button class="menu-close" aria-label="Close menu" onclick="toggleMenu()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-section-label">Explore</div>
+            <a href="#features" class="menu-item">🌐 Features</a>
+            <a href="#action" class="menu-item">🎬 See It In Action</a>
+            <a href="#nodecapture" class="menu-item">🎛️ Node &amp; Captures</a>
+            <a href="#docs" class="menu-item">📖 Documentation</a>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-section-label">Install</div>
+            <a href="#install" class="menu-item">📦 Install Guide</a>
+            <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes" target="_blank" rel="noopener" class="menu-item">🐙 GitHub Repository</a>
+            <a href="https://registry.comfy.org/publishers/eternal/nodes/eternal-nodes" target="_blank" rel="noopener" class="menu-item btn-accent" style="margin-top:0.5rem;">Comfy Registry</a>
+        </div>
+
+        <div class="menu-footer mt-auto pt-4 border-t border-brand-borderMedium">
+            <p class="text-[10px] text-brand-dim">v1.1.3 · ComfyUI-ETERNAL-Nodes · MIT</p>
+        </div>
+    </div>
+
+    <main class="flex-grow" id="main">
+        <!-- ==========================================
+             HERO SECTION
+             ========================================== -->
+        <section class="py-16 lg:py-24 text-center relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+                <!-- Hero Badge -->
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-surface border border-brand-borderMedium text-xs text-brand-muted mb-7 shadow-sm">
+                    <span>ComfyUI-ETERNAL-Nodes</span>
+                    <span class="text-brand-borderMedium">•</span>
+                    <strong class="text-brand-accentLight font-semibold">v1.1.3 · MIT Open Source</strong>
+                </div>
+
+                <!-- Headline -->
+                <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight bg-gradient-to-b from-white to-[#b8b8d0] bg-clip-text text-transparent max-w-4xl mx-auto leading-tight mb-6">
+                    Panorama 360 Viewer Eternal
+                </h1>
+
+                <p class="text-lg sm:text-xl text-brand-muted max-w-2xl mx-auto leading-relaxed mb-10 font-normal">
+                    Inspect a 360° equirectangular panorama directly inside your ComfyUI node. Drag to look around, scroll to zoom with live FOV write-back, and check seams, poles, and horizon tilt without leaving your workflow.
+                </p>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
+                    <a href="https://registry.comfy.org/publishers/eternal/nodes/eternal-nodes" target="_blank" rel="noopener" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-accent hover:bg-brand-accentHover text-black font-semibold text-sm px-6 py-3 rounded-md shadow-[0_0_16px_rgba(124,92,252,0.25)] transition-all transform hover:-translate-y-0.5">
+                        <svg class="w-3.5 h-3.5 rounded-[3px]" viewBox="0 0 48 48" aria-hidden="true"><path d="M31.0126 30.4797C31.0576 30.3275 31.0822 30.1671 31.0822 29.9985C31.0822 29.0649 30.3294 28.3081 29.4006 28.3081H21.8643C21.4593 28.3122 21.1279 27.9832 21.1279 27.576C21.1279 27.5019 21.1401 27.432 21.1565 27.3662L23.1858 20.259C23.2717 19.9465 23.5581 19.7161 23.8936 19.7161L31.4586 19.7079C33.0542 19.7079 34.4003 18.6262 34.8053 17.1497L35.9427 13.1889C35.9795 13.0491 36 12.8969 36 12.7447C36 11.8152 35.2513 11.0625 34.3266 11.0625H25.1742C23.5868 11.0625 22.2448 12.136 21.8316 13.5961L21.0624 16.2983C20.9724 16.6068 20.6901 16.833 20.3546 16.833H18.1575C16.5823 16.833 15.2526 17.8859 14.8271 19.3295L12.0614 29.0402C12.0205 29.1841 12 29.3404 12 29.4967C12 30.4304 12.7528 31.1871 13.6816 31.1871H15.8418C16.2468 31.1871 16.5782 31.5162 16.5782 31.9275C16.5782 31.9974 16.5701 32.0673 16.5496 32.1331L15.7845 34.8107C15.7477 34.9546 15.7232 35.1027 15.7232 35.2549C15.7232 36.1844 16.4719 36.937 17.3965 36.937L26.553 36.9288C28.1446 36.9288 29.4865 35.8512 29.8957 34.3829L31.0085 30.4838L31.0126 30.4797Z" fill="#F2FF59"/></svg>
+                        <span>Get on Comfy Registry</span>
+                    </a>
+                    <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes" target="_blank" rel="noopener" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-surface text-brand-text hover:bg-brand-surface/80 border border-brand-borderMedium hover:border-brand-muted text-sm px-6 py-3 rounded-md transition-all">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                        <span>GitHub Repository</span>
+                    </a>
+                    <a href="#docs" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-surface text-brand-text hover:bg-brand-surface/80 border border-brand-borderMedium hover:border-brand-muted text-sm px-6 py-3 rounded-md transition-all">
+                        <span>📖 Read Documentation</span>
+                    </a>
+                </div>
+
+                <!-- See It In Action -->
+                <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-brand-heading mb-6 text-center">See It In Action</h2>
+                <div id="action" class="max-w-5xl mx-auto rounded-2xl p-2 bg-gradient-to-b from-brand-accent/30 to-white/5 border border-brand-border shadow-[0_16px_48px_rgba(0,0,0,0.6),0_0_32px_rgba(124,92,252,0.2)]">
+                    <video src="assets/panorama360_viewer_demo.mp4" controls playsinline autoplay muted loop preload="metadata" poster="assets/shot_canvas_controls.jpg" class="w-full rounded-xl border border-brand-border block aspect-video object-cover"></video>
+                </div>
+                <p class="text-xs text-brand-muted mt-4 max-w-5xl mx-auto text-center leading-relaxed">Real 1080p recording inside a live ComfyUI workflow — zero mock-ups. <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/tag/v1.1.0" target="_blank" rel="noopener" class="text-brand-accentLight hover:underline">Download on Releases &rarr;</a></p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             CORE FEATURES & ALSO INCLUDED
+             ========================================== -->
+        <section id="features" class="py-20 border-t border-brand-border">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+                <div class="text-center max-w-2xl mx-auto mb-14">
+                    <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-brand-heading mb-3">
+                        Built for Live 360° Inspection
+                    </h2>
+                    <p class="text-brand-muted text-base sm:text-lg">
+                        Native ComfyUI previews show a flat 2:1 plate. This node renders the unwrapped equirectangular image on a true sphere right inside your graph.
+                    </p>
+                </div>
+
+                <!-- 2 Main Core Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                    <div class="glow-card-hover rounded-2xl bg-brand-card border border-brand-borderMedium p-8 flex flex-col justify-between hover:border-brand-accentBorder hover:shadow-glow-purple">
+                        <div>
+                            <div class="w-12 h-12 rounded-xl bg-brand-accentSubtle border border-brand-accentBorder flex items-center justify-center text-2xl mb-6">
+                                🌐
+                            </div>
+                            <h3 class="text-xl font-bold text-brand-heading mb-3">Interactive WebGL Sphere + FOV Write-Back</h3>
+                            <p class="text-brand-muted text-sm leading-relaxed mb-6">
+                                Drag to orbit around your panorama and scroll to zoom between 30° and 140° FOV (default 100°). Every scroll writes the new FOV straight back to the node widget, so the framing you choose saves with the workflow.
+                            </p>
+                        </div>
+                        <div>
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-brand-surface border border-brand-borderMedium text-brand-accentLight">
+                                Real-Time Canvas Node
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="glow-card-hover rounded-2xl bg-brand-card border border-brand-borderMedium p-8 flex flex-col justify-between hover:border-brand-accentBorder hover:shadow-glow-purple">
+                        <div>
+                            <div class="w-12 h-12 rounded-xl bg-brand-accentSubtle border border-brand-accentBorder flex items-center justify-center text-2xl mb-6">
+                                ⚙️
+                            </div>
+                            <h3 class="text-xl font-bold text-brand-heading mb-3">Gear Settings Panel &amp; Pass-Through Output</h3>
+                            <p class="text-brand-muted text-sm leading-relaxed mb-6">
+                                The schema widgets are hidden from the body and replaced by a custom control band, quick sliders, fullscreen glass UI, and a floating Gear panel. An <code>image</code> pass-through lets the viewer sit mid-graph instead of ending it.
+                            </p>
+                        </div>
+                        <div>
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-brand-surface border border-brand-borderMedium text-brand-accentLight">
+                                Mid-Graph Pass-Through
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6 Feature Cards -->
+                <div class="rounded-2xl bg-brand-elevated border border-brand-border p-8">
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-brand-muted mb-6">
+                        Everything Included in Panorama 360 Viewer Eternal
+                    </h3>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                        <!-- 1. Offline Three.js -->
+                        <a href="#docs" class="glow-card-hover flex items-start gap-4 p-5 rounded-xl bg-brand-card border border-brand-border hover:border-brand-borderMedium hover:bg-brand-surface transition-all group">
+                            <div class="text-2xl shrink-0">📦</div>
+                            <div>
+                                <h4 class="text-base font-semibold text-brand-heading mb-1 group-hover:text-brand-accentLight transition-colors">Works Fully Offline</h4>
+                                <p class="text-xs text-brand-muted leading-relaxed font-normal">Three.js r128 ships inside <code>js/vendor/three.min.js</code> as a private module — zero CDN, zero internet, zero global state collision.</p>
+                            </div>
+                        </a>
+
+                        <!-- 2. 2D Software Fallback -->
+                        <a href="#docs" class="glow-card-hover flex items-start gap-4 p-5 rounded-xl bg-brand-card border border-brand-border hover:border-brand-borderMedium hover:bg-brand-surface transition-all group">
+                            <div class="text-2xl shrink-0">🛡️</div>
+                            <div>
+                                <h4 class="text-base font-semibold text-brand-heading mb-1 group-hover:text-brand-accentLight transition-colors">2D Software Fallback</h4>
+                                <p class="text-xs text-brand-muted leading-relaxed font-normal">When WebGL is disabled or unavailable, a 2D software equirectangular projector draws the same view — never blank.</p>
+                            </div>
+                        </a>
+
+                        <!-- 3. Auto-Rotate -->
+                        <a href="#controls" class="glow-card-hover flex items-start gap-4 p-5 rounded-xl bg-brand-card border border-brand-border hover:border-brand-borderMedium hover:bg-brand-surface transition-all group">
+                            <div class="text-2xl shrink-0">🔄</div>
+                            <div>
+                                <h4 class="text-base font-semibold text-brand-heading mb-1 group-hover:text-brand-accentLight transition-colors">Smart Auto-Rotation</h4>
+                                <p class="text-xs text-brand-muted leading-relaxed font-normal">Toggle Auto drift from −60°/s to +60°/s. Pauses immediately when you grab the sphere and resumes when you release.</p>
+                            </div>
+                        </a>
+
+                        <!-- 4. Z-Axis Camera Height -->
+                        <a href="#controls" class="glow-card-hover flex items-start gap-4 p-5 rounded-xl bg-brand-card border border-brand-border hover:border-brand-borderMedium hover:bg-brand-surface transition-all group">
+                            <div class="text-2xl shrink-0">↕️</div>
+                            <div>
+                                <h4 class="text-base font-semibold text-brand-heading mb-1 group-hover:text-brand-accentLight transition-colors">Z-Axis Camera Height</h4>
+                                <p class="text-xs text-brand-muted leading-relaxed font-normal">Slide the eye up or down (−99% to +99% of sphere radius) independently from pitch — true translation with a level horizon guide.</p>
+                            </div>
+                        </a>
+
+                        <!-- 5. Exposure & Background -->
+                        <a href="#docs" class="glow-card-hover flex items-start gap-4 p-5 rounded-xl bg-brand-card border border-brand-border hover:border-brand-borderMedium hover:bg-brand-surface transition-all group">
+                            <div class="text-2xl shrink-0">☀️</div>
+                            <div>
+                                <h4 class="text-base font-semibold text-brand-heading mb-1 group-hover:text-brand-accentLight transition-colors">Non-Destructive Exposure</h4>
+                                <p class="text-xs text-brand-muted leading-relaxed font-normal">Adjust viewer brightness (0.2–3.0) and background (<code>dark</code> / <code>black</code> / <code>grey</code> / <code>light</code>) without touching wire data.</p>
+                            </div>
+                        </a>
+
+                        <!-- 6. Batch Frame Picker -->
+                        <a href="#docs" class="glow-card-hover flex items-start gap-4 p-5 rounded-xl bg-brand-card border border-brand-border hover:border-brand-borderMedium hover:bg-brand-surface transition-all group">
+                            <div class="text-2xl shrink-0">🎞️</div>
+                            <div>
+                                <h4 class="text-base font-semibold text-brand-heading mb-1 group-hover:text-brand-accentLight transition-colors">Batch Frame Index</h4>
+                                <p class="text-xs text-brand-muted leading-relaxed font-normal">Inspect any image in a multi-frame batch with <code>frame_index</code> while passing the full tensor downstream untouched.</p>
+                            </div>
+                        </a>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SEE IT IN ACTION (VIDEO + REAL CAPTURES)
+             ========================================== -->
+        <section id="screenshots" class="py-20 border-t border-brand-border">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+                <div class="text-center max-w-2xl mx-auto mb-14">
+                    <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-brand-heading mb-3">
+                        Node Surface &amp; Captures
+                    </h2>
+                    <p class="text-brand-muted text-base sm:text-lg">
+                        The real node surface on canvas — demo video is up top in See It In Action.
+                    </p>
+                </div>
+
+                <!-- Real Node Capture + Control Surface Elements -->
+                <figure id="nodecapture" class="glow-card-hover rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden mb-8 hover:border-brand-accentBorder">
+                    <div class="relative overflow-hidden bg-brand-card p-5">
+                        <img src="assets/node_on_canvas.png" alt="Close-up capture of Panorama 360 Viewer Eternal node on canvas" width="620" height="468" loading="lazy" data-zoom="assets/node_on_canvas.png" data-zoom-alt="Close-up capture of Panorama 360 Viewer Eternal (#1449)" tabindex="0" role="button" aria-label="Zoom: Close-up node capture" class="cursor-zoom-in w-full h-auto max-w-[620px] mx-auto rounded-xl border border-brand-border"/>
+                    </div>
+                    <figcaption class="p-5 border-t border-brand-border">
+                        <h3 class="text-base font-semibold text-brand-heading mb-1">Real Node Capture (Node #1449)</h3>
+                        <p class="text-xs text-brand-muted leading-relaxed">Purple header, <code>− 140° +</code> stepper, <code>Auto</code> pill, Reset / Fullscreen / Settings, and live <code>fov 140° (154° wide)</code> readout chip.</p>
+                    </figcaption>
+                </figure>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="rounded-2xl bg-brand-card border border-brand-borderMedium p-6">
+                        <h3 class="text-lg font-bold text-brand-heading mb-2">Top Control Band</h3>
+                        <p class="text-sm text-brand-muted leading-relaxed">Stepper buttons (<code>−</code> / <code>+</code>) and editable FOV box, an <code>Auto</code> spin switch, and quick action buttons for <strong>Reset View</strong>, <strong>Fullscreen</strong>, and the <strong>Settings</strong> panel.</p>
+                    </div>
+                    <div class="rounded-2xl bg-brand-card border border-brand-borderMedium p-6">
+                        <h3 class="text-lg font-bold text-brand-heading mb-2">Three Quick Sliders</h3>
+                        <p class="text-sm text-brand-muted leading-relaxed"><strong>Zoom</strong> (unit toggle <code>° FOV</code> / <code>%</code>), <strong>Spin</strong> (−60°/s to +60°/s), and <strong>Height</strong> (−99% to +99% Z-axis) stay bound to the node so every tweak saves in your workflow JSON.</p>
+                    </div>
+                    <div class="rounded-2xl bg-brand-card border border-brand-borderMedium p-6">
+                        <h3 class="text-lg font-bold text-brand-heading mb-2">Live Viewport Chip</h3>
+                        <p class="text-sm text-brand-muted leading-relaxed">Corner readout shows vertical and horizontal FOV (<code>fov 140° (154° wide)</code>). Searchable on canvas via <code>360</code>, <code>panorama</code>, <code>equirectangular</code>, <code>sphere</code>, or <code>vr</code>.</p>
+                    </div>
+                </div>
+
+                <!-- 2x2 Real Capture Gallery (Zoomable) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <div class="glow-card-hover rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden flex flex-col hover:border-brand-accentBorder">
+                        <div class="aspect-video bg-brand-elevated overflow-hidden relative group cursor-zoom-in" data-zoom="assets/shot_canvas_controls.jpg" data-zoom-alt="Canvas View &amp; Quick Controls — Zoom, Spin, Height sliders and FOV stepper" tabindex="0" role="button" aria-label="Zoom: Canvas View &amp; Quick Controls">
+                            <img src="assets/shot_canvas_controls.jpg" alt="Canvas View and Quick Controls" width="1920" height="1080" loading="lazy" decoding="async" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"/>
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-opacity duration-300">
+                                <div class="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-5 border-t border-brand-border">
+                            <h3 class="text-base font-semibold text-brand-heading mb-1">Canvas Control Band &amp; Quick Sliders</h3>
+                            <p class="text-xs text-brand-muted leading-relaxed"><code>− 105° +</code> FOV stepper, <code>Auto</code> switch, Reset / Fullscreen / Settings buttons, and live Zoom (<code>° FOV</code> or <code>%</code>), Spin, and Height sliders.</p>
+                        </div>
+                    </div>
+
+                    <div class="glow-card-hover rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden flex flex-col hover:border-brand-accentBorder">
+                        <div class="aspect-video bg-brand-elevated overflow-hidden relative group cursor-zoom-in" data-zoom="assets/shot_fullscreen_mode.jpg" data-zoom-alt="Fullscreen Mode — floating translucent bottom control bar" tabindex="0" role="button" aria-label="Zoom: Fullscreen Mode">
+                            <img src="assets/shot_fullscreen_mode.jpg" alt="Fullscreen Mode with floating glass bar" width="1920" height="1080" loading="lazy" decoding="async" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"/>
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-opacity duration-300">
+                                <div class="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-5 border-t border-brand-border">
+                            <h3 class="text-base font-semibold text-brand-heading mb-1">Fullscreen Mode with Glass HUD</h3>
+                            <p class="text-xs text-brand-muted leading-relaxed">Pure CSS <code>:fullscreen</code> layout flips the controls to a frosted glass dock at the bottom while the sphere fills the entire screen.</p>
+                        </div>
+                    </div>
+
+                    <div class="glow-card-hover rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden flex flex-col hover:border-brand-accentBorder">
+                        <div class="aspect-video bg-brand-elevated overflow-hidden relative group cursor-zoom-in" data-zoom="assets/shot_settings_node.jpg" data-zoom-alt="Gear Settings Panel — Per-node settings saved with the workflow" tabindex="0" role="button" aria-label="Zoom: Gear Settings Panel">
+                            <img src="assets/shot_settings_node.jpg" alt="Gear Settings Panel open beside the node" width="1920" height="1080" loading="lazy" decoding="async" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"/>
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-opacity duration-300">
+                                <div class="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-5 border-t border-brand-border">
+                            <h3 class="text-base font-semibold text-brand-heading mb-1">Floating Gear Settings Panel</h3>
+                            <p class="text-xs text-brand-muted leading-relaxed">Top section binds directly to the node's workflow inputs: FOV, Auto-rotate, Background, Start yaw/pitch, Camera height (Z), and Exposure.</p>
+                        </div>
+                    </div>
+
+                    <div class="glow-card-hover rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden flex flex-col hover:border-brand-accentBorder">
+                        <div class="aspect-video bg-brand-elevated overflow-hidden relative group cursor-zoom-in" data-zoom="assets/shot_settings_defaults.jpg" data-zoom-alt="Viewer Defaults &amp; Horizon Guide — Zoom limits, speed, drag, and equatorial guide" tabindex="0" role="button" aria-label="Zoom: Viewer Defaults">
+                            <img src="assets/shot_settings_defaults.jpg" alt="Viewer Defaults and Horizon Guide settings" width="1920" height="1080" loading="lazy" decoding="async" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"/>
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-opacity duration-300">
+                                <div class="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-5 border-t border-brand-border">
+                            <h3 class="text-base font-semibold text-brand-heading mb-1">Global Defaults &amp; Horizon Guide</h3>
+                            <p class="text-xs text-brand-muted leading-relaxed">Customize min/max FOV bounds, wheel &amp; drag sensitivity, wheel mode (panorama vs canvas zoom), horizon ring guide, and one-click <strong>Save view to node</strong>.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             INSTALL SECTION
+             ========================================== -->
+        <section id="install" class="py-20 border-t border-brand-border">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+                <div class="text-center max-w-2xl mx-auto mb-14">
+                    <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-brand-heading mb-3">
+                        Install ComfyUI-ETERNAL-Nodes
+                    </h2>
+                    <p class="text-brand-muted text-base sm:text-lg">
+                        Free and open-source under the MIT license. Panorama 360 Viewer requires zero external Python dependencies.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+
+                    <!-- ComfyUI Manager / Registry Card -->
+                    <div class="glow-card-hover rounded-2xl bg-brand-card border-2 border-brand-accent p-8 flex flex-col justify-between shadow-glow-purple relative">
+                        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-brand-accent text-black font-extrabold text-[11px] uppercase tracking-wider px-4 py-0.5 rounded-full shadow-sm z-10 whitespace-nowrap">
+                            Recommended
+                        </div>
+
+                        <div>
+                            <h3 class="text-xl font-bold text-brand-heading mb-2">ComfyUI Manager &amp; Registry</h3>
+                            <div class="flex items-baseline gap-2 my-3">
+                                <span class="text-2xl font-extrabold text-brand-accentLight">One-click install</span>
+                            </div>
+                            <p class="text-sm text-brand-muted leading-relaxed mb-6">
+                                Open <strong>ComfyUI Manager &rarr; Custom Nodes Manager</strong>, search for <strong>ETERNAL Nodes</strong> (publisher <code>eternal</code>), and click Install.
+                            </p>
+                            <ul class="space-y-3 text-sm text-brand-muted font-normal mb-8">
+                                <li class="flex items-center gap-2.5"><span class="text-brand-accentLight font-bold">✓</span> Automatic updates through ComfyUI Manager</li>
+                                <li class="flex items-center gap-2.5"><span class="text-brand-accentLight font-bold">✓</span> Panorama 360 Viewer works with zero extra packages</li>
+                                <li class="flex items-center gap-2.5"><span class="text-brand-accentLight font-bold">✓</span> Offline Three.js r128 bundled in the pack</li>
+                            </ul>
+                        </div>
+
+                        <a href="https://registry.comfy.org/publishers/eternal/nodes/eternal-nodes" target="_blank" rel="noopener" class="w-full inline-flex items-center justify-center gap-2 bg-brand-accent hover:bg-brand-accentHover text-black font-bold text-sm py-3.5 px-5 rounded-xl shadow-[0_0_16px_rgba(124,92,252,0.25)] transition-all transform hover:-translate-y-0.5">
+                            Open on Comfy Registry &rarr;
+                        </a>
+                    </div>
+
+                    <!-- Manual Git Clone Card -->
+                    <div class="glow-card-hover rounded-2xl bg-brand-card border border-brand-borderMedium p-8 flex flex-col justify-between relative">
+                        <div>
+                            <h3 class="text-xl font-bold text-brand-heading mb-2">Manual Git Install</h3>
+                            <div class="flex items-baseline gap-2 my-3">
+                                <span class="text-2xl font-extrabold text-brand-heading">Source repository</span>
+                            </div>
+                            <p class="text-sm text-brand-muted leading-relaxed mb-4">
+                                Clone directly into your <code>ComfyUI/custom_nodes</code> directory and restart ComfyUI:
+                            </p>
+                            <pre class="bg-brand-bg border border-brand-border rounded-xl p-4 font-mono text-xs text-brand-accentLight whitespace-pre-wrap break-words mb-6 leading-relaxed">cd ComfyUI/custom_nodes
+git clone https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes.git
+# restart ComfyUI</pre>
+                        </div>
+
+                        <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes" target="_blank" rel="noopener" class="w-full inline-flex items-center justify-center gap-2 bg-brand-surface hover:bg-brand-surface/80 border border-brand-borderMedium hover:border-brand-muted text-brand-heading font-bold text-sm py-3.5 px-5 rounded-xl transition-all transform hover:-translate-y-0.5">
+                            View GitHub Repository &rarr;
+                        </a>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             DOCUMENTATION & GUIDES
+             ========================================== -->
+        <section id="docs" class="py-20 border-t border-brand-border">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+
+                <div class="text-center max-w-2xl mx-auto mb-14">
+                    <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-brand-heading mb-3">
+                        Documentation &amp; Reference
+                    </h2>
+                    <p class="text-brand-muted text-base sm:text-lg">
+                        Exact inputs, outputs, settings, and usage notes for Panorama 360 Viewer Eternal.
+                    </p>
+                </div>
+
+                <div class="space-y-4">
+
+                    <!-- 1. Inputs & Outputs Table -->
+                    <details class="doc-item rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden transition-all duration-200" open>
+                        <summary class="flex items-center gap-4 p-5 cursor-pointer hover:bg-brand-surface select-none font-semibold text-base text-brand-heading">
+                            <span class="text-xl">🎛️</span> Node Inputs &amp; Outputs (<code>EternalViewer360</code>)
+                        </summary>
+                        <div class="p-6 border-t border-brand-border">
+                            <table class="spec-table w-full text-sm rounded-xl overflow-hidden bg-brand-surface border border-brand-border">
+                                <tbody>
+                                    <tr><th scope="row">image (IN / OUT)</th><td><code>IMAGE</code> — Equirectangular 360° image (2:1 aspect). Passed through to the <code>image</code> output unchanged.</td></tr>
+                                    <tr><th scope="row">frame_index</th><td><code>INT</code> (0–4096, default <code>0</code>) — Selects which frame of an image batch to inspect.</td></tr>
+                                    <tr><th scope="row">fov</th><td><code>INT</code> (30–140, default <code>100</code>) — Opening vertical field of view in degrees. Wheel &amp; stepper write back live.</td></tr>
+                                    <tr><th scope="row">auto_rotate</th><td><code>FLOAT</code> (−60.0 to 60.0, default <code>0.0</code>) — Degrees per second drift (0 = off). Pauses while dragging.</td></tr>
+                                    <tr><th scope="row">background</th><td><code>COMBO</code> (<code>dark</code> / <code>black</code> / <code>grey</code> / <code>light</code>) — Scene backdrop visible around poles.</td></tr>
+                                    <tr><th scope="row">exposure</th><td><code>FLOAT</code> (0.2–3.0, default <code>1.0</code>) — Viewer brightness only; never modifies the image tensor on the wire.</td></tr>
+                                    <tr><th scope="row">start_yaw</th><td><code>FLOAT</code> (0–360, default <code>180</code>) — Horizontal starting angle (0/360 = image edge, 180 = center).</td></tr>
+                                    <tr><th scope="row">start_pitch</th><td><code>FLOAT</code> (−90 to 90, default <code>0</code>) — Vertical starting tilt (0 = horizon, negative = floor, positive = sky).</td></tr>
+                                    <tr><th scope="row">z_offset</th><td><code>FLOAT</code> (−99 to 99, default <code>0</code>) — Camera height on the vertical axis as % of sphere radius.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+
+                    <!-- 2. How to Use -->
+                    <details class="doc-item rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden transition-all duration-200">
+                        <summary class="flex items-center gap-4 p-5 cursor-pointer hover:bg-brand-surface select-none font-semibold text-base text-brand-heading">
+                            <span class="text-xl">🧭</span> Quick Usage Guide
+                        </summary>
+                        <div class="p-6 border-t border-brand-border text-sm text-brand-muted leading-relaxed space-y-3">
+                            <ol class="list-decimal pl-5 space-y-2">
+                                <li>Add <strong>Panorama 360 Viewer Eternal</strong> (search <code>360</code> or look in <code>⚡ ETERNAL ● ↩ /🌐 360</code>).</li>
+                                <li>Connect any <strong>2:1 equirectangular</strong> image into <code>image</code> (and optionally continue from its <code>image</code> output).</li>
+                                <li>Queue the workflow — the sphere renders live inside the node.</li>
+                                <li>Drag to orbit, scroll to zoom, toggle <strong>Auto</strong> to drift, or open <strong>Settings</strong> to adjust camera height, exposure, zoom limits, drag speed, and the equatorial horizon guide.</li>
+                            </ol>
+                        </div>
+                    </details>
+
+                    <!-- 3. Also in the Pack -->
+                    <details class="doc-item rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden transition-all duration-200">
+                        <summary class="flex items-center gap-4 p-5 cursor-pointer hover:bg-brand-surface select-none font-semibold text-base text-brand-heading">
+                            <span class="text-xl">🧩</span> Other Nodes in ComfyUI-ETERNAL-Nodes
+                        </summary>
+                        <div class="p-6 border-t border-brand-border text-sm text-brand-muted leading-relaxed space-y-3">
+                            <p>This page currently focuses on <strong>Panorama 360 Viewer Eternal</strong>. The same pack also ships:</p>
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li><strong>Mesh Bridge Eternal</strong> &amp; <strong>Flat Shade Eternal</strong> &amp; <strong>Trimesh to Model3D Eternal</strong> (3D mesh bridging, split/crease flat shading, GLB export)</li>
+                                <li><strong>Video Sizes Eternal</strong> &amp; <strong>Aspect Ratio Size Picker</strong> (latent sizing snapped to ×8)</li>
+                                <li><strong>ETERNAL Tile Pipeline</strong> (<code>Tile Split</code>, <code>Tile Source</code>, <code>Tile Save</code>, <code>Tile Merge</code> for high-res outpainting)</li>
+                            </ul>
+                        </div>
+                    </details>
+
+                    <!-- 4. Credits & Architecture -->
+                    <details class="doc-item rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden transition-all duration-200">
+                        <summary class="flex items-center gap-4 p-5 cursor-pointer hover:bg-brand-surface select-none font-semibold text-base text-brand-heading">
+                            <span class="text-xl">📄</span> Architecture &amp; Attribution
+                        </summary>
+                        <div class="p-6 border-t border-brand-border text-sm text-brand-muted leading-relaxed space-y-3">
+                            <p>Ported from <code>pavel-zinchenko/comfyui-360-viewer</code> (MIT) and expanded in-house with V3 schema support (<code>UI.PreviewImage</code>, zero manual temp files), pass-through output, batch <code>frame_index</code>, FOV write-back, quick sliders, fullscreen glass HUD, and the Gear Settings panel.</p>
+                            <p>No extra Python packages are required for the 360 viewer (<code>trimesh</code> in <code>pyproject.toml</code> is only imported by the 3D mesh nodes).</p>
+                        </div>
+                    </details>
+
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- ==========================================
+         FOOTER
+         ========================================== -->
+    <footer class="bg-brand-bg border-t border-brand-border py-12 text-center text-xs text-brand-muted">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <div class="flex items-center justify-center gap-2 text-brand-heading font-semibold text-base">
+                <span class="text-brand-accent">◈</span> ComfyUI-ETERNAL-Nodes
+            </div>
+
+            <p>© 2025–2026 EternalShade3D. Released under the MIT License.</p>
+
+            <div class="flex flex-wrap items-center justify-center gap-6 text-brand-muted">
+                <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 hover:text-brand-heading transition-colors"><img src="assets/logo_github.svg" alt="" width="14" height="14" class="w-3.5 h-3.5 opacity-75"/>GitHub Repository</a>
+                <a href="https://registry.comfy.org/publishers/eternal/nodes/eternal-nodes" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 hover:text-brand-heading transition-colors"><img src="assets/logo_comfyui.svg" alt="" width="14" height="14" class="w-3.5 h-3.5 rounded-[3px]"/>Comfy Registry</a>
+                <a href="https://www.instagram.com/eternal.shade3d/" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 hover:text-brand-heading transition-colors"><img src="assets/logo_white_instagram.png" alt="" width="14" height="14" class="w-3.5 h-3.5 opacity-75"/>Instagram</a>
+                <a href="https://discord.com/invite/DHMT6J6TmX" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 hover:text-brand-heading transition-colors"><img src="assets/logo_white_discord.png" alt="" width="14" height="14" class="w-3.5 h-3.5 opacity-75"/>Discord Support</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Zoom Modal Gallery -->
+    <div id="zoom-modal" class="zoom-modal" aria-modal="true" role="dialog" aria-label="Image gallery zoom" aria-hidden="true">
+        <div class="zoom-backdrop" id="zoom-backdrop"></div>
+        <div class="zoom-stage">
+            <div class="zoom-content">
+                <img id="zoom-img" alt="" width="1920" height="1080" />
+                <p id="zoom-caption" class="zoom-caption"></p>
+            </div>
+            <button id="zoom-prev" class="zoom-nav-btn" aria-label="Previous image">&#8249;</button>
+            <button id="zoom-next" class="zoom-nav-btn" aria-label="Next image">&#8250;</button>
+            <button id="zoom-close" class="zoom-btn-close" aria-label="Close zoom">&times;</button>
+        </div>
+    </div>
+
+    <!-- Interactive Script (Mobile Menu, Accordion & Zoom Modal) -->
+    <script>
+        function toggleMenu(){
+            var btn = document.querySelector('.menu-btn');
+            var menu = document.getElementById('mobile-menu');
+            var open = menu.classList.contains('open');
+            if(open){
+                menu.classList.remove('open');
+                btn.setAttribute('aria-expanded','false');
+            } else {
+                menu.classList.add('open');
+                btn.setAttribute('aria-expanded','true');
+            }
+        }
+        document.querySelectorAll('#mobile-menu a').forEach(function(a){
+            a.addEventListener('click', function(){
+                document.getElementById('mobile-menu').classList.remove('open');
+                document.querySelector('.menu-btn').setAttribute('aria-expanded','false');
+            });
+        });
+        document.querySelectorAll('.doc-item').forEach(function(details){
+            details.addEventListener('toggle', function(){
+                if(details.open){
+                    document.querySelectorAll('.doc-item').forEach(function(other){
+                        if(other !== details) other.removeAttribute('open');
+                    });
+                }
+            });
+        });
+
+        // Zoom modal gallery
+        (function(){
+            var modal = document.getElementById('zoom-modal');
+            var zoomImg = document.getElementById('zoom-img');
+            var zoomCaption = document.getElementById('zoom-caption');
+            var cards = document.querySelectorAll('[data-zoom]');
+            var list = [];
+            var idx = 0;
+
+            cards.forEach(function(c){
+                list.push({
+                    src: c.getAttribute('data-zoom'),
+                    alt: c.getAttribute('data-zoom-alt')
+                });
+            });
+
+            function open(n){
+                idx = ((n % list.length) + list.length) % list.length;
+                var item = list[idx];
+                zoomImg.src = item.src;
+                zoomCaption.textContent = item.alt;
+                modal.classList.add('open');
+                modal.setAttribute('aria-hidden','false');
+                document.body.style.overflow = 'hidden';
+            }
+            function close(){
+                modal.classList.remove('open');
+                modal.setAttribute('aria-hidden','true');
+                document.body.style.overflow = '';
+            }
+            cards.forEach(function(c, i){
+                c.addEventListener('click', function(){ open(i); });
+                c.addEventListener('keydown', function(e){
+                    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(i); }
+                });
+            });
+            document.getElementById('zoom-close').addEventListener('click', close);
+            document.getElementById('zoom-backdrop').addEventListener('click', close);
+            document.getElementById('zoom-prev').addEventListener('click', function(e){ e.stopPropagation(); open(idx - 1); });
+            document.getElementById('zoom-next').addEventListener('click', function(e){ e.stopPropagation(); open(idx + 1); });
+            document.addEventListener('keydown', function(e){
+                if(modal.getAttribute('aria-hidden') === 'false'){
+                    if(e.key === 'Escape') close();
+                    else if(e.key === 'ArrowLeft') open(idx - 1);
+                    else if(e.key === 'ArrowRight') open(idx + 1);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
