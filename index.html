@@ -39,10 +39,13 @@
          ANNOUNCEMENT BAR
          ========================================== -->
     <div id="announcement-bar" class="bg-gradient-to-r from-brand-accent/30 via-brand-accent/40 to-brand-accent/30 border-b border-brand-accentBorder text-xs sm:text-sm text-brand-heading py-2 px-4 transition-all duration-300">
-        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
-                <span class="inline-block bg-brand-accent text-black text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">Comfy Registry</span>
-                <span class="font-medium text-brand-heading anno-text">v1.1.3 — Panorama 360 Viewer Eternal: live sphere inside the node, FOV write-back, gear panel &amp; offline Three.js</span>
+        <div class="max-w-7xl mx-auto flex items-center gap-3">
+            <span class="hidden sm:inline-block shrink-0 bg-brand-accent text-black text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">Comfy Registry</span>
+            <div class="flex-1 min-w-0 overflow-hidden">
+                <div class="anno-track">
+                    <span class="anno-item font-medium text-brand-heading anno-text">v1.1.3 — Panorama 360 Viewer Eternal: live sphere inside the node, FOV write-back, gear panel &amp; offline Three.js</span>
+                    <span class="anno-item anno-dup font-medium text-brand-heading anno-text" aria-hidden="true">v1.1.3 — Panorama 360 Viewer Eternal: live sphere inside the node, FOV write-back, gear panel &amp; offline Three.js</span>
+                </div>
             </div>
             <div class="flex items-center gap-3 shrink-0">
                 <a href="#install" class="text-brand-accentLight hover:underline font-medium text-xs">Install now &rarr;</a>
@@ -138,8 +141,9 @@
                 </div>
 
                 <!-- Headline -->
-                <h1 class="text-3xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight bg-gradient-to-b from-white to-[#b8b8d0] bg-clip-text text-transparent max-w-4xl mx-auto leading-tight mb-6">
-                    Panorama 360 Viewer Eternal
+                <h1 class="max-w-4xl mx-auto leading-tight mb-6">
+                    <span class="block text-3xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight bg-gradient-to-b from-white to-[#b8b8d0] bg-clip-text text-transparent">Panorama 360 Viewer Eternal</span>
+                    <span class="block mt-2 sm:mt-3 text-base sm:text-xl lg:text-2xl font-bold tracking-tight text-brand-accentLight">for ComfyUI</span>
                 </h1>
 
                 <p class="text-lg sm:text-xl text-brand-muted max-w-2xl mx-auto leading-relaxed mb-10 font-normal">
