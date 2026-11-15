@@ -75,3 +75,18 @@ function toggleMenu(){
                 }
             });
         })();
+
+        /* Live social proof: Comfy Registry stats (public, CORS-open). Fallback text stays if offline. */
+        (function(){
+            var dl = document.getElementById('stat-downloads');
+            var st = document.getElementById('stat-stars');
+            if(!dl && !st) return;
+            fetch('https://api.comfy.org/nodes/eternal-nodes', { cache: 'no-store' })
+                .then(function(r){ return r.ok ? r.json() : null; })
+                .then(function(j){
+                    if(!j) return;
+                    if(typeof j.downloads === 'number') dl.textContent = j.downloads;
+                    if(typeof j.github_stars === 'number') st.textContent = j.github_stars;
+                })
+                .catch(function(){ /* keep static fallback */ });
+        })();
