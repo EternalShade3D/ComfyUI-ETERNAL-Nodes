@@ -80,13 +80,22 @@ function toggleMenu(){
         (function(){
             var dl = document.getElementById('stat-downloads');
             var st = document.getElementById('stat-stars');
-            if(!dl && !st) return;
+            var ver = document.getElementById('stat-version');
+            var dt = document.getElementById('stat-date');
+            if(!dl && !st && !ver) return;
             fetch('https://api.comfy.org/nodes/eternal-nodes', { cache: 'no-store' })
                 .then(function(r){ return r.ok ? r.json() : null; })
                 .then(function(j){
                     if(!j) return;
                     if(typeof j.downloads === 'number') dl.textContent = j.downloads;
                     if(typeof j.github_stars === 'number') st.textContent = j.github_stars;
+                    if(j.latest_version && j.latest_version.version && ver){
+                        ver.textContent = j.latest_version.version;
+                    }
+                    if(j.latest_version && j.latest_version.createdAt && dt){
+                        var t = new Date(j.latest_version.createdAt);
+                        if(!isNaN(t.getTime())) dt.textContent = t.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+                    }
                 })
                 .catch(function(){ /* keep static fallback */ });
         })();
