@@ -40,5 +40,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-The viewer loads three.js (r128) from cdnjs.cloudflare.com at runtime; three.js
-is MIT licensed and is not bundled in this repository.
+The viewer ships three.js r128 at `js/vendor/three.min.js`. The upstream UMD
+build is wrapped with module-local exports and its `window.__THREE__` marker is
+disabled so ComfyUI can load it without creating a global duplicate-instance
+warning. The upstream MIT license header remains in the vendored file. The
+viewer uses this local module only and makes no CDN or other network request for
+Three.js; if the file is missing, it shows a local error instead.

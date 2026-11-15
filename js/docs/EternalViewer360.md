@@ -1,6 +1,6 @@
 # Panorama 360 Viewer Eternal
 
-Shows an **equirectangular (2:1) 360 image as a WebGL sphere inside the node** — drag to look around, scroll to zoom, optional auto-rotation. Use it to inspect seams, poles and distortion of a panorama without leaving the workflow.
+Shows an **equirectangular (2:1) 360 image in an interactive view inside the node** — WebGL sphere when available, local 2D software projection otherwise. Drag to look around, scroll to zoom, optional auto-rotation. Use it to inspect seams, poles and distortion without leaving the workflow.
 
 ## Inputs
 - `image` (IMAGE) — equirectangular 2:1 panorama.
@@ -18,4 +18,4 @@ Shows an **equirectangular (2:1) 360 image as a WebGL sphere inside the node** �
 Start yaw/pitch, camera height, exposure, zoom range, wheel/drag speed, horizon guide, background, reset.
 
 ## Notes
-- Needs internet once to fetch three.js (~600 KB), browser-cached after.
+- Works fully offline: Three.js r128 is vendored in `js/vendor/three.min.js` and imported as a private module; without WebGL, the node uses its local 2D software projector.
