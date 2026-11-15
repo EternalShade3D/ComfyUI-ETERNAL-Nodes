@@ -27,7 +27,7 @@
     <meta name="theme-color" content="#0a0a0f"/>
     <link rel="preload" href="assets/fonts/Inter-400.woff2" as="font" type="font/woff2" crossorigin/>
     <link rel="preload" href="assets/fonts/Inter-800.woff2" as="font" type="font/woff2" crossorigin/>
-    <link rel="preload" href="assets/shot_canvas_controls.jpg" as="image" fetchpriority="high"/>
+    <link rel="preload" href="assets/opt/shot_canvas_controls.webp" as="image" fetchpriority="high"/>
 </head>
 
 <body class="text-brand-text font-sans antialiased min-h-screen flex flex-col">
@@ -168,9 +168,12 @@
                 <!-- See It In Action -->
                 <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-brand-heading mb-6 text-center">See It In Action</h2>
                 <div id="action" class="max-w-5xl mx-auto rounded-2xl p-2 bg-gradient-to-b from-brand-accent/30 to-white/5 border border-brand-border shadow-[0_16px_48px_rgba(0,0,0,0.6),0_0_32px_rgba(124,92,252,0.2)]">
-                    <video src="assets/panorama360_viewer_demo.mp4" controls playsinline autoplay muted loop preload="metadata" poster="assets/shot_canvas_controls.jpg" class="w-full rounded-xl border border-brand-border block aspect-video object-cover"></video>
+                    <video controls playsinline autoplay muted loop preload="metadata" poster="assets/opt/shot_canvas_controls.webp" class="w-full rounded-xl border border-brand-border block aspect-video object-cover">
+                        <source src="assets/opt/panorama360_viewer_demo.webm" type="video/webm">
+                        <source src="assets/panorama360_viewer_demo.mp4" type="video/mp4">
+                    </video>
                 </div>
-                <p class="text-xs text-brand-muted mt-4 max-w-5xl mx-auto text-center leading-relaxed">Real 1080p recording inside a live ComfyUI workflow — zero mock-ups. <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/tag/v1.1.3" target="_blank" rel="noopener" class="text-brand-accentLight hover:underline">Download on Releases &rarr;</a></p>
+                <p class="text-xs text-brand-muted mt-4 max-w-5xl mx-auto text-center leading-relaxed">Real 1080p recording inside a live ComfyUI workflow — zero mock-ups. <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/tag/v1.1.3" target="_blank" rel="noopener" class="text-brand-accentLight underline underline-offset-2 hover:text-white">Download on Releases &rarr;</a></p>
 
             </div>
         </section>
@@ -331,7 +334,7 @@
 
                     <div class="glow-card-hover rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden flex flex-col hover:border-brand-accentBorder">
                         <div class="aspect-video bg-brand-elevated overflow-hidden relative group cursor-zoom-in" data-zoom="assets/shot_canvas_controls.jpg" data-zoom-alt="Canvas View &amp; Quick Controls — Zoom, Spin, Height sliders and FOV stepper" tabindex="0" role="button" aria-label="Zoom: Canvas View &amp; Quick Controls">
-                            <img src="assets/shot_canvas_controls.jpg" alt="Canvas View and Quick Controls" width="1920" height="1080" loading="lazy" decoding="async" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"/>
+                            <img src="assets/opt/shot_canvas_controls.webp" alt="Canvas View and Quick Controls" width="1280" height="720" loading="lazy" decoding="async" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"/>
                             <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-opacity duration-300">
                                 <div class="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm">
                                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -346,7 +349,7 @@
 
                     <div class="glow-card-hover rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden flex flex-col hover:border-brand-accentBorder">
                         <div class="aspect-video bg-brand-elevated overflow-hidden relative group cursor-zoom-in" data-zoom="assets/shot_fullscreen_mode.jpg" data-zoom-alt="Fullscreen Mode — floating translucent bottom control bar" tabindex="0" role="button" aria-label="Zoom: Fullscreen Mode">
-                            <img src="assets/shot_fullscreen_mode.jpg" alt="Fullscreen Mode with floating glass bar" width="1920" height="1080" loading="lazy" decoding="async" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"/>
+                            <img src="assets/opt/shot_fullscreen_mode.webp" alt="Fullscreen Mode with floating glass bar" width="1280" height="720" loading="lazy" decoding="async" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"/>
                             <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-opacity duration-300">
                                 <div class="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm">
                                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -361,7 +364,7 @@
 
                     <div class="glow-card-hover rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden flex flex-col hover:border-brand-accentBorder">
                         <div class="aspect-video bg-brand-elevated overflow-hidden relative group cursor-zoom-in" data-zoom="assets/shot_settings_node.jpg" data-zoom-alt="Gear Settings Panel — Per-node settings saved with the workflow" tabindex="0" role="button" aria-label="Zoom: Gear Settings Panel">
-                            <img src="assets/shot_settings_node.jpg" alt="Gear Settings Panel open beside the node" width="1920" height="1080" loading="lazy" decoding="async" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"/>
+                            <img src="assets/opt/shot_settings_node.webp" alt="Gear Settings Panel open beside the node" width="1280" height="720" loading="lazy" decoding="async" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"/>
                             <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-opacity duration-300">
                                 <div class="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm">
                                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -376,7 +379,7 @@
 
                     <div class="glow-card-hover rounded-2xl bg-brand-card border border-brand-borderMedium overflow-hidden flex flex-col hover:border-brand-accentBorder">
                         <div class="aspect-video bg-brand-elevated overflow-hidden relative group cursor-zoom-in" data-zoom="assets/shot_settings_defaults.jpg" data-zoom-alt="Viewer Defaults &amp; Horizon Guide — Zoom limits, speed, drag, and equatorial guide" tabindex="0" role="button" aria-label="Zoom: Viewer Defaults">
-                            <img src="assets/shot_settings_defaults.jpg" alt="Viewer Defaults and Horizon Guide settings" width="1920" height="1080" loading="lazy" decoding="async" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"/>
+                            <img src="assets/opt/shot_settings_defaults.webp" alt="Viewer Defaults and Horizon Guide settings" width="1280" height="720" loading="lazy" decoding="async" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"/>
                             <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-opacity duration-300">
                                 <div class="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm">
                                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
