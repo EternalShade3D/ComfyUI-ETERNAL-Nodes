@@ -1,7 +1,7 @@
 [project]
 name = "eternal-nodes"
-description = "ETERNAL nodes for ComfyUI: Panorama 360 Viewer Eternal (interactive equirectangular 360 viewer), Flat Shade Eternal (GPU flat shading via split/crease modes), Mesh Bridge (Types.MESH <-> trimesh), Trimesh to Model3D a tile pipeline for high-res outpainting, Video Sizes and Aspect Ratio Size Picker."
-version = "1.1.3"
+description = "Eternal Nodes for ComfyUI by EternalShade3D: ▶ Panorama 360 Viewer(Load & inspect equirectangular panoramas with drag-to-orbit, scroll zoom, live FOV write-back, & seam/pole/horizon tilt checks) ▶ Flat Shade (GPU flat shading with split and crease modes) ▶ Mesh Bridge & Trimesh to Model3D (Types.MESH ⇄ trimesh conversion and GLB export) ▶ Tile Pipeline Eternal (Split, Source, Save, and Merge pipeline for high-res outpainting) ▶ Video Sizes & Aspect Ratio Size Picker"
+version = "1.1.4"
 license = { file = "LICENSE" }
 
 keywords = ["comfyui", "eternal", "3d", "mesh", "flat-shade", "trimesh", "glb", "preview", "360", "panorama", "equirectangular", "tile", "outpaint"]
@@ -23,5 +23,5 @@ Documentation = "https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes#readme"
 
 [tool.comfy]
 PublisherId = "eternal"
-DisplayName = "ETERNAL Nodes"
+DisplayName = "Eternal Nodes"
 Icon = "https://raw.githubusercontent.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/main/icon.svg"
