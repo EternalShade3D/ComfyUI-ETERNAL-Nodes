@@ -130,6 +130,25 @@ Aspect Ratio Size Picker ──width──▶ Empty Latent Image
                        └─height─┘
 ```
 
+### Common long-edge reference
+
+| Long edge | Used for |
+| --- | --- |
+| 720 | HD 720p |
+| 1080 | Full HD / social base |
+| 1200 | FB shared link / high-res social |
+| 1280 | HD video / YouTube thumbnail |
+| 1440 | QHD short edge |
+| 1920 | Full HD long edge / YouTube 1080p |
+| 2048 | Photo print @300dpi (~4x6 in) |
+| 2160 | 4K short edge |
+| 2560 | QHD (1440p) long edge |
+| 3508 | A3 print @300dpi |
+| 3840 | 4K UHD long edge |
+| 4096 | DCI 4K |
+| 5120 | 5K |
+| 7680 | 8K UHD |
+
 ## 🗄 `_archive` — kept only so old workflows still load
 
 Five nodes are superseded. They stay registered on purpose, under `🗄 _archive`,
