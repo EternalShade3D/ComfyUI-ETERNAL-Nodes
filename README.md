@@ -4,7 +4,7 @@
   <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/latest"><img src="https://img.shields.io/github/v/release/EternalShade3D/ComfyUI-ETERNAL-Nodes?style=for-the-badge&labelColor=26282e&label=release&color=000000" alt="Latest release"></a>
   <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/blob/main/pyproject.toml"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&labelColor=26282e&logo=python&logoColor=white" alt="Python 3.10+"></a>
   <img src="https://img.shields.io/badge/ComfyUI-node%20pack-000000?style=for-the-badge&labelColor=26282e&logo=comfyui&logoColor=white" alt="ComfyUI node pack">
-  <a href="https://registry.comfy.org/publishers/eternal/eternal-nodes"><img src="https://img.shields.io/badge/Comfy%20Registry-published-000000?style=for-the-badge&labelColor=26282e&logo=comfyui&logoColor=white" alt="Comfy Registry, published"></a>
+  <a href="https://registry.comfy.org/nodes/eternal-nodes"><img src="https://img.shields.io/badge/Comfy%20Registry-published-000000?style=for-the-badge&labelColor=26282e&logo=comfyui&logoColor=white" alt="Comfy Registry, published"></a>
   <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge&labelColor=26282e" alt="License: MIT"></a>
 </p>
 
