@@ -10,13 +10,12 @@ permissions:
   pages: write
   id-token: write
 
-environment:
-  name: github-pages
-  url: ${{ steps.deployment.outputs.page_url }}
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout gh-pages content
         uses: actions/checkout@v4
