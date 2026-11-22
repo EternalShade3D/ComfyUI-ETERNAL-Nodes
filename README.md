@@ -1,4 +1,6 @@
 # ComfyUI-ETERNAL-Nodes
+🌐 **Live page:** https://eternalshade3d.github.io/ComfyUI-ETERNAL-Nodes/ (landing + docs) — GitHub Pages
+
 
 <p align="center">
   <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/latest"><img src="https://img.shields.io/github/v/release/EternalShade3D/ComfyUI-ETERNAL-Nodes?style=for-the-badge&labelColor=26282e&label=release&color=000000" alt="Latest release"></a>
