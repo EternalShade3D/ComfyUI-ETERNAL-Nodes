@@ -1,23 +1,43 @@
-# ComfyUI-ETERNAL-Nodes
-🌐 **Live page:** https://eternalshade3d.github.io/ComfyUI-ETERNAL-Nodes/ (landing + docs) — GitHub Pages
+<div align="center">
 
+# ⚡ ComfyUI-ETERNAL-Nodes
 
-<p align="center">
-  <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/latest"><img src="https://img.shields.io/github/v/release/EternalShade3D/ComfyUI-ETERNAL-Nodes?style=for-the-badge&labelColor=26282e&label=release&color=000000" alt="Latest release"></a>
-  <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/blob/main/pyproject.toml"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&labelColor=26282e&logo=python&logoColor=white" alt="Python 3.10+"></a>
-  <img src="https://img.shields.io/badge/ComfyUI-node%20pack-000000?style=for-the-badge&labelColor=26282e&logo=comfyui&logoColor=white" alt="ComfyUI node pack">
-  <a href="https://registry.comfy.org/nodes/eternal-nodes"><img src="https://img.shields.io/badge/Comfy%20Registry-published-000000?style=for-the-badge&labelColor=26282e&logo=comfyui&logoColor=white" alt="Comfy Registry, published"></a>
-  <a href="https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge&labelColor=26282e" alt="License: MIT"></a>
-</p>
+**Interactive 360° panorama inspection, 3D mesh repair & bridging, flat-shade control, high-resolution outpainting tile pipelines, and smart image-size picking.**
 
-Custom ComfyUI nodes by **EternalShade3D** — a single library pack for interactive
-360° panorama inspection, 3D mesh repair/bridging, flat-shade control, a tile
-pipeline for high-resolution outpainting, and image-size picking.
+[![Latest release](https://img.shields.io/github/v/release/EternalShade3D/ComfyUI-ETERNAL-Nodes?style=for-the-badge&labelColor=26282e&label=release&color=4a3fcf)](https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/releases/latest)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&labelColor=26282e&logo=python&logoColor=white)](https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/blob/main/pyproject.toml)
+[![ComfyUI node pack](https://img.shields.io/badge/ComfyUI-Node%20Pack-4a3fcf?style=for-the-badge&labelColor=26282e&logo=comfyui&logoColor=white)](#)
+[![Comfy Registry](https://img.shields.io/badge/Comfy%20Registry-Published-4a3fcf?style=for-the-badge&labelColor=26282e&logo=comfyui&logoColor=white)](https://registry.comfy.org/nodes/eternal-nodes)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge&labelColor=26282e)](https://github.com/EternalShade3D/ComfyUI-ETERNAL-Nodes/blob/main/LICENSE)
 
-Category prefix on canvas: `⚡ ETERNAL ● ↩ / ...`
+<br>
 
-Nodes spawn with brand colors: title `#4a3fcf`, body `#2a283e` (recolorable
-with any node-color picker afterwards).
+🌐 **[Explore the Live Landing Page & Documentation →](https://eternalshade3d.github.io/ComfyUI-ETERNAL-Nodes/)**
+
+</div>
+
+---
+
+### ✨ Overview
+
+Custom ComfyUI node pack engineered by **[EternalShade3D](https://github.com/EternalShade3D)** — bundling specialized 3D, panorama, and high-res image workflow tools into a single lightweight library:
+
+* 🌐 **360° Panorama Inspection** — Interactive viewport previewing right on the canvas.
+* 🧊 **3D Mesh Repair & Bridging** — Geometry cleanup and gap-filling tools.
+* 🎨 **Flat-Shade Control** — Crisp surface shading toggles for 3D previews.
+* 🧩 **High-Res Outpainting Pipeline** — Seamless tile-based processing for large canvases.
+* 📐 **Image-Size Picking** — Quick aspect-ratio and resolution presets.
+
+---
+
+### 🎨 Canvas Appearance
+
+| Property | Default Behavior |
+| :--- | :--- |
+| **Category Prefix** | `⚡ ETERNAL ● ↩ / ...` |
+| **Node Title Color** | ![#4a3fcf](https://img.shields.io/badge/%234a3fcf-4a3fcf?style=flat-square) `#4a3fcf` *(Royal Indigo)* |
+| **Node Body Color** | ![#2a283e](https://img.shields.io/badge/%232a283e-2a283e?style=flat-square) `#2a283e` *(Deep Slate)* |
+| **Customization** | Fully recolorable via any ComfyUI node-color picker |
 
 ## Nodes
 
